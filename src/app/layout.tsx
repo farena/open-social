@@ -26,10 +26,14 @@ export default function RootLayout({
   return (
     <html
       lang="en"
+      translate="no"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
       suppressHydrationWarning
     >
-      <body className="h-full" suppressHydrationWarning>{children}</body>
+      <head>
+        <meta name="google" content="notranslate" />
+      </head>
+      <body className="h-full notranslate" suppressHydrationWarning>{children}</body>
     </html>
   );
 }
