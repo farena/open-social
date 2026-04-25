@@ -1,8 +1,9 @@
 "use client";
 
 import { useCallback, useState, type PointerEvent as RPointerEvent } from "react";
+import dynamic from "next/dynamic";
 import type { Slide } from "@/types/carousel";
-import type { SlideElement } from "@/types/slide-model";
+import type { SlideElement, Span, TextElement } from "@/types/slide-model";
 import {
   clampToCanvas,
   resizeFromAnchor,
@@ -10,6 +11,12 @@ import {
   type ResizeAnchor,
 } from "@/lib/slide-coords";
 import type { Selection, SlideEditorAction } from "./useSlideEditor";
+
+// Lazy: Lexical only loads when a text element is double-clicked.
+const LexicalTextEditor = dynamic(
+  () => import("./LexicalTextEditor").then((m) => m.LexicalTextEditor),
+  { ssr: false },
+);
 
 interface SlideOverlayProps {
   slide: Slide;
@@ -35,6 +42,8 @@ export function SlideOverlay({
   canvas,
   dispatch,
 }: SlideOverlayProps) {
+  const [editingTextId, setEditingTextId] = useState<string | null>(null);
+
   const handlePointerDownEmpty = useCallback(
     (e: RPointerEvent<HTMLDivElement>) => {
       if (e.target === e.currentTarget) {
@@ -43,6 +52,12 @@ export function SlideOverlay({
     },
     [dispatch],
   );
+
+  const editingElement =
+    editingTextId &&
+    (slide.elements.find(
+      (el) => el.id === editingTextId && el.kind === "text",
+    ) as TextElement | undefined);
 
   return (
     <div
@@ -60,10 +75,15 @@ export function SlideOverlay({
           scale={scale}
           canvas={canvas}
           isSelected={selection === el.id}
+          isEditing={editingTextId === el.id}
           dispatch={dispatch}
+          onEnterTextEdit={() => {
+            if (el.kind === "text") setEditingTextId(el.id);
+          }}
         />
       ))}
       {selection &&
+        !editingTextId &&
         (() => {
           const sel = slide.elements.find((el) => el.id === selection);
           if (!sel) return null;
@@ -76,6 +96,21 @@ export function SlideOverlay({
             />
           );
         })()}
+      {editingElement && (
+        <LexicalTextEditor
+          element={editingElement}
+          scale={scale}
+          onCommit={(spans: Span[]) => {
+            dispatch({
+              type: "EDIT_SPANS",
+              elementId: editingElement.id,
+              spans,
+            });
+            setEditingTextId(null);
+          }}
+          onCancel={() => setEditingTextId(null)}
+        />
+      )}
     </div>
   );
 }
@@ -87,7 +122,9 @@ interface ElementHitAreaProps {
   scale: number;
   canvas: { w: number; h: number };
   isSelected: boolean;
+  isEditing: boolean;
   dispatch: (action: SlideEditorAction) => void;
+  onEnterTextEdit: () => void;
 }
 
 function ElementHitArea({
@@ -95,26 +132,23 @@ function ElementHitArea({
   scale,
   canvas,
   isSelected,
+  isEditing,
   dispatch,
+  onEnterTextEdit,
 }: ElementHitAreaProps) {
   const [dragging, setDragging] = useState(false);
-  const startRef = useState<{
-    pointerX: number;
-    pointerY: number;
-    origPos: { x: number; y: number };
-  } | null>(null)[0];
 
   const sizeH =
     element.kind === "text" && element.size.h === "auto" ? 80 : (element.size.h as number);
 
   const handlePointerDown = useCallback(
     (e: RPointerEvent<HTMLDivElement>) => {
+      if (isEditing) return;
       e.stopPropagation();
       if (!isSelected) {
         dispatch({ type: "SELECT", elementId: element.id });
         return;
       }
-      // Already selected — start drag
       e.currentTarget.setPointerCapture(e.pointerId);
       setDragging(true);
 
@@ -146,22 +180,39 @@ function ElementHitArea({
       window.addEventListener("pointermove", onMove);
       window.addEventListener("pointerup", onUp);
     },
-    [isSelected, dispatch, element.id, element.position, element.size, scale, canvas],
+    [isSelected, isEditing, dispatch, element.id, element.position, element.size, scale, canvas],
+  );
+
+  const handleDoubleClick = useCallback(
+    (e: RPointerEvent<HTMLDivElement>) => {
+      if (element.kind !== "text") return;
+      e.stopPropagation();
+      onEnterTextEdit();
+    },
+    [element.kind, onEnterTextEdit],
   );
 
   return (
     <div
       data-element-id={element.id}
       onPointerDown={handlePointerDown}
+      onDoubleClick={handleDoubleClick}
       style={{
         position: "absolute",
         left: element.position.x * scale,
         top: element.position.y * scale,
         width: element.size.w * scale,
         height: sizeH * scale,
-        cursor: isSelected ? (dragging ? "grabbing" : "grab") : "pointer",
-        // Slight visual hint on hover when not selected
-        outline: isSelected ? "none" : undefined,
+        cursor: isEditing
+          ? "text"
+          : isSelected
+            ? dragging
+              ? "grabbing"
+              : "grab"
+            : "pointer",
+        outline: isSelected && !isEditing ? "none" : undefined,
+        // Hide hit area while editing so Lexical's contenteditable receives clicks
+        pointerEvents: isEditing ? "none" : "auto",
       }}
     />
   );
