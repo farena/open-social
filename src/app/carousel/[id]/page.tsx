@@ -318,11 +318,24 @@ export default function CarouselEditorPage({ params }: PageProps) {
 
           {/* Carousel preview */}
           <CarouselPreview
+            carouselId={carousel.id}
             slides={carousel.slides}
             aspectRatio={carousel.aspectRatio}
             activeIndex={activeSlide}
             onActiveChange={setActiveSlide}
             showSafeZones={showSafeZones}
+            onSlidePersisted={(updated) => {
+              setCarousel((prev) =>
+                prev
+                  ? {
+                      ...prev,
+                      slides: prev.slides.map((s) =>
+                        s.id === updated.id ? updated : s,
+                      ),
+                    }
+                  : prev,
+              );
+            }}
           />
 
           {/* Caption panel */}

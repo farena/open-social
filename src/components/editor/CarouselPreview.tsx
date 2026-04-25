@@ -1,26 +1,36 @@
 "use client";
 
-import { useEffect, useRef, type CSSProperties } from "react";
+import { useEffect, useRef, useCallback, type CSSProperties } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SlideCanvas } from "./SlideCanvas";
+import { SlideOverlay } from "./SlideOverlay";
 import { SafeZoneOverlay } from "./SafeZoneOverlay";
+import { useSlideEditor } from "./useSlideEditor";
 import type { Slide, AspectRatio } from "@/types/carousel";
 
 interface CarouselPreviewProps {
+  carouselId: string;
   slides: Slide[];
   aspectRatio: AspectRatio;
   activeIndex: number;
   onActiveChange: (index: number) => void;
   showSafeZones?: boolean;
+  /**
+   * Called after the editor's debounced persist so the page can update its
+   * carousel state with the server response.
+   */
+  onSlidePersisted?: (slide: Slide) => void;
 }
 
 export function CarouselPreview({
+  carouselId,
   slides,
   aspectRatio,
   activeIndex,
   onActiveChange,
   showSafeZones = false,
+  onSlidePersisted,
 }: CarouselPreviewProps) {
   const slide = slides[activeIndex];
   const prevIndexRef = useRef(activeIndex);
@@ -47,9 +57,7 @@ export function CarouselPreview({
 
   return (
     <div className="flex-1 flex flex-col min-h-0 min-w-0 bg-[#f0f0f0]">
-      {/* Preview area with padding for arrows */}
       <div className="flex-1 relative min-h-0 p-8 px-14">
-        {/* Left arrow */}
         <Button
           variant="ghost"
           size="icon"
@@ -61,21 +69,20 @@ export function CarouselPreview({
           <ChevronLeft className="h-4 w-4" />
         </Button>
 
-        {/* Slide fills the padded inner area */}
         <div
           key={slide.id}
           className="oc-slide-in relative w-full h-full"
           style={{ "--oc-slide-from": `${direction}px` } as CSSProperties}
         >
-          <SlideCanvas
+          <EditableSlide
+            carouselId={carouselId}
             slide={slide}
             aspectRatio={aspectRatio}
-            style={{ width: "100%", height: "100%" }}
+            onSlidePersisted={onSlidePersisted}
           />
           <SafeZoneOverlay aspectRatio={aspectRatio} visible={showSafeZones} />
         </div>
 
-        {/* Right arrow */}
         <Button
           variant="ghost"
           size="icon"
@@ -88,7 +95,6 @@ export function CarouselPreview({
         </Button>
       </div>
 
-      {/* Slide counter dots */}
       {slides.length > 1 && (
         <div className="flex items-center justify-center gap-1.5 pb-3 shrink-0">
           {slides.map((_, i) => (
@@ -109,5 +115,64 @@ export function CarouselPreview({
         </div>
       )}
     </div>
+  );
+}
+
+interface EditableSlideProps {
+  carouselId: string;
+  slide: Slide;
+  aspectRatio: AspectRatio;
+  onSlidePersisted?: (slide: Slide) => void;
+}
+
+function EditableSlide({
+  carouselId,
+  slide: externalSlide,
+  aspectRatio,
+  onSlidePersisted,
+}: EditableSlideProps) {
+  const persist = useCallback(
+    async (slide: Slide) => {
+      const res = await fetch(
+        `/api/carousels/${carouselId}/slides/${slide.id}`,
+        {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            background: slide.background,
+            elements: slide.elements,
+            ...(slide.legacyHtml !== undefined
+              ? { legacyHtml: slide.legacyHtml }
+              : {}),
+          }),
+        },
+      );
+      if (res.ok && onSlidePersisted) {
+        const updated = await res.json();
+        onSlidePersisted(updated);
+      }
+    },
+    [carouselId, onSlidePersisted],
+  );
+
+  const { slide, selection, dispatch } = useSlideEditor(externalSlide, {
+    onPersist: persist,
+  });
+
+  return (
+    <SlideCanvas
+      slide={slide}
+      aspectRatio={aspectRatio}
+      style={{ width: "100%", height: "100%" }}
+      overlay={({ scale, canvas }) => (
+        <SlideOverlay
+          slide={slide}
+          selection={selection}
+          scale={scale}
+          canvas={canvas}
+          dispatch={dispatch}
+        />
+      )}
+    />
   );
 }
