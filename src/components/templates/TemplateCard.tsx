@@ -18,7 +18,7 @@ export function TemplateCard({ template, onUse, onDelete }: TemplateCardProps) {
       <div className="h-28 rounded-lg bg-muted mb-3 overflow-hidden">
         {template.slides.length > 0 ? (
           <SlideRenderer
-            html={template.slides[0].html}
+            slide={template.slides[0]}
             aspectRatio={template.aspectRatio}
             className="w-full h-full"
           />

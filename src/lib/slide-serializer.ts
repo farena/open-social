@@ -1,5 +1,10 @@
 import type { AspectRatio, Slide } from "@/types/carousel";
 import { DIMENSIONS } from "@/types/carousel";
+
+export type SerializableSlide = Pick<
+  Slide,
+  "background" | "elements" | "legacyHtml"
+>;
 import type {
   BackgroundElement,
   ElementFill,
@@ -27,7 +32,7 @@ import type {
  * slides whose original HTML couldn't be parsed by the migrator.
  */
 export function serializeSlideToHtml(
-  slide: Slide,
+  slide: SerializableSlide,
   aspectRatio: AspectRatio,
 ): string {
   if (slide.legacyHtml) {

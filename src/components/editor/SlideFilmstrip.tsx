@@ -97,7 +97,7 @@ function SortableSlideThumb({
         aria-label={`Select slide ${index + 1}`}
       >
         <SlideRenderer
-          html={slide.html}
+          slide={slide}
           aspectRatio={aspectRatio}
           className="w-full h-full"
         />

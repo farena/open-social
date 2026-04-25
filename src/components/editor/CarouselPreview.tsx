@@ -68,7 +68,7 @@ export function CarouselPreview({
           style={{ "--oc-slide-from": `${direction}px` } as CSSProperties}
         >
           <SlideRenderer
-            html={slide.html}
+            slide={slide}
             aspectRatio={aspectRatio}
             style={{ width: "100%", height: "100%" }}
           />

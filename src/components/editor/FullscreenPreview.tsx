@@ -72,7 +72,7 @@ export function FullscreenPreview({
           {/* Slide */}
           {slide && (
             <SlideRenderer
-              html={slide.html}
+              slide={slide}
               aspectRatio={aspectRatio}
               style={{ width: "100%", height: "100%", maxWidth: 800 }}
             />

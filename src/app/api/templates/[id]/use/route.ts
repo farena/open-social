@@ -20,7 +20,12 @@ export async function POST(
 
   // Copy all slides
   for (const slide of template.slides) {
-    await addSlide(carousel.id, slide.html, slide.notes);
+    await addSlide(carousel.id, {
+      background: slide.background,
+      elements: slide.elements,
+      legacyHtml: slide.legacyHtml,
+      notes: slide.notes,
+    });
   }
 
   return NextResponse.json(carousel, { status: 201 });

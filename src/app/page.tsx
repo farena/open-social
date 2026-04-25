@@ -210,7 +210,7 @@ export default function DashboardPage() {
                   <div className="h-28 rounded-lg bg-muted mb-3 flex items-center justify-center overflow-hidden">
                     {carousel.slides.length > 0 ? (
                       <SlideRenderer
-                        html={carousel.slides[0].html}
+                        slide={carousel.slides[0]}
                         aspectRatio={carousel.aspectRatio}
                         className="w-full h-full"
                       />

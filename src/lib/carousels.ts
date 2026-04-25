@@ -3,6 +3,27 @@ import { generateId, now } from "./utils";
 import type { Asset } from "@/types/asset";
 import type { Carousel, CarouselsData, Slide, AspectRatio, ReferenceImage } from "@/types/carousel";
 import { MAX_SLIDES, MAX_VERSIONS } from "@/types/carousel";
+import type {
+  BackgroundElement,
+  SlideElement,
+  SlideSnapshot,
+} from "@/types/slide-model";
+
+/**
+ * Snapshot the editable parts of a slide (background + elements + legacyHtml)
+ * before any mutation, capped at MAX_VERSIONS. Mutates the slide in place.
+ */
+function pushSnapshot(slide: Slide): void {
+  const snapshot: SlideSnapshot = {
+    background: structuredClone(slide.background),
+    elements: structuredClone(slide.elements),
+    legacyHtml: slide.legacyHtml,
+  };
+  slide.previousVersions.push(snapshot);
+  if (slide.previousVersions.length > MAX_VERSIONS) {
+    slide.previousVersions.shift();
+  }
+}
 
 const FILE = "carousels.json";
 
@@ -97,10 +118,16 @@ export async function deleteCarousel(id: string): Promise<boolean> {
 
 // --- Slide operations ---
 
+export interface NewSlideInput {
+  background: BackgroundElement;
+  elements: SlideElement[];
+  legacyHtml?: string;
+  notes?: string;
+}
+
 export async function addSlide(
   carouselId: string,
-  html: string,
-  notes = ""
+  input: NewSlideInput,
 ): Promise<Slide | null> {
   const data = await load();
   const carousel = data.carousels.find((c) => c.id === carouselId);
@@ -109,10 +136,12 @@ export async function addSlide(
 
   const slide: Slide = {
     id: generateId(),
-    html,
-    previousVersions: [],
     order: carousel.slides.length,
-    notes,
+    notes: input.notes ?? "",
+    background: input.background,
+    elements: input.elements,
+    legacyHtml: input.legacyHtml,
+    previousVersions: [],
   };
   carousel.slides.push(slide);
   carousel.updatedAt = now();
@@ -120,10 +149,22 @@ export async function addSlide(
   return slide;
 }
 
+export type SlideUpdate = Partial<{
+  background: BackgroundElement;
+  elements: SlideElement[];
+  legacyHtml: string | null;
+  notes: string;
+}>;
+
+/**
+ * Replace any subset of {background, elements, legacyHtml, notes}.
+ * Background/elements/legacyHtml changes are versioned (one snapshot per
+ * call). `notes`-only updates skip the snapshot.
+ */
 export async function updateSlide(
   carouselId: string,
   slideId: string,
-  updates: Partial<Pick<Slide, "html" | "notes">>
+  updates: SlideUpdate,
 ): Promise<Slide | null> {
   const data = await load();
   const carousel = data.carousels.find((c) => c.id === carouselId);
@@ -131,15 +172,98 @@ export async function updateSlide(
   const slide = carousel.slides.find((s) => s.id === slideId);
   if (!slide) return null;
 
-  // Save current HTML to version history before overwriting
-  if (updates.html && updates.html !== slide.html) {
-    slide.previousVersions.push(slide.html);
-    if (slide.previousVersions.length > MAX_VERSIONS) {
-      slide.previousVersions.shift();
+  const editableChanged =
+    updates.background !== undefined ||
+    updates.elements !== undefined ||
+    updates.legacyHtml !== undefined;
+
+  if (editableChanged) pushSnapshot(slide);
+
+  if (updates.background !== undefined) slide.background = updates.background;
+  if (updates.elements !== undefined) slide.elements = updates.elements;
+  if (updates.legacyHtml !== undefined) {
+    if (updates.legacyHtml === null) {
+      delete slide.legacyHtml;
+    } else {
+      slide.legacyHtml = updates.legacyHtml;
     }
   }
+  if (updates.notes !== undefined) slide.notes = updates.notes;
 
-  Object.assign(slide, updates);
+  carousel.updatedAt = now();
+  await save(data);
+  return slide;
+}
+
+export async function updateSlideBackground(
+  carouselId: string,
+  slideId: string,
+  background: BackgroundElement,
+): Promise<Slide | null> {
+  return updateSlide(carouselId, slideId, { background });
+}
+
+export async function addSlideElement(
+  carouselId: string,
+  slideId: string,
+  element: SlideElement,
+): Promise<Slide | null> {
+  const data = await load();
+  const carousel = data.carousels.find((c) => c.id === carouselId);
+  if (!carousel) return null;
+  const slide = carousel.slides.find((s) => s.id === slideId);
+  if (!slide) return null;
+
+  pushSnapshot(slide);
+  slide.elements.push(element);
+  carousel.updatedAt = now();
+  await save(data);
+  return slide;
+}
+
+export async function updateSlideElement(
+  carouselId: string,
+  slideId: string,
+  elementId: string,
+  patch: Partial<SlideElement>,
+): Promise<Slide | null> {
+  const data = await load();
+  const carousel = data.carousels.find((c) => c.id === carouselId);
+  if (!carousel) return null;
+  const slide = carousel.slides.find((s) => s.id === slideId);
+  if (!slide) return null;
+  const idx = slide.elements.findIndex((el) => el.id === elementId);
+  if (idx === -1) return null;
+
+  pushSnapshot(slide);
+  // The patch is keyed by the element's actual kind; the API layer ensures
+  // the patch shape matches before reaching here.
+  slide.elements[idx] = {
+    ...slide.elements[idx],
+    ...patch,
+    id: slide.elements[idx].id,
+    kind: slide.elements[idx].kind,
+  } as SlideElement;
+  carousel.updatedAt = now();
+  await save(data);
+  return slide;
+}
+
+export async function deleteSlideElement(
+  carouselId: string,
+  slideId: string,
+  elementId: string,
+): Promise<Slide | null> {
+  const data = await load();
+  const carousel = data.carousels.find((c) => c.id === carouselId);
+  if (!carousel) return null;
+  const slide = carousel.slides.find((s) => s.id === slideId);
+  if (!slide) return null;
+  const idx = slide.elements.findIndex((el) => el.id === elementId);
+  if (idx === -1) return null;
+
+  pushSnapshot(slide);
+  slide.elements.splice(idx, 1);
   carousel.updatedAt = now();
   await save(data);
   return slide;
@@ -189,7 +313,7 @@ export async function reorderSlides(
 
 export async function undoSlide(
   carouselId: string,
-  slideId: string
+  slideId: string,
 ): Promise<Slide | null> {
   const data = await load();
   const carousel = data.carousels.find((c) => c.id === carouselId);
@@ -197,8 +321,14 @@ export async function undoSlide(
   const slide = carousel.slides.find((s) => s.id === slideId);
   if (!slide || slide.previousVersions.length === 0) return null;
 
-  const previousHtml = slide.previousVersions.pop()!;
-  slide.html = previousHtml;
+  const snapshot = slide.previousVersions.pop()!;
+  slide.background = snapshot.background;
+  slide.elements = snapshot.elements;
+  if (snapshot.legacyHtml !== undefined) {
+    slide.legacyHtml = snapshot.legacyHtml;
+  } else {
+    delete slide.legacyHtml;
+  }
   carousel.updatedAt = now();
   await save(data);
   return slide;

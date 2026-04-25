@@ -2,18 +2,32 @@
 
 import { useMemo, useRef, useEffect, useState, useCallback } from "react";
 import { wrapSlideHtml } from "@/lib/slide-html";
-import type { AspectRatio } from "@/types/carousel";
+import { serializeSlideToHtml } from "@/lib/slide-serializer";
+import type { AspectRatio, Slide } from "@/types/carousel";
 import { DIMENSIONS } from "@/types/carousel";
 
+/**
+ * The renderer only needs the visual fields. Accepting a Pick lets us reuse
+ * it for templates (Omit<Slide, "previousVersions">) and any other reduced
+ * slide shape.
+ */
+type RenderableSlide = Pick<Slide, "background" | "elements" | "legacyHtml">;
+
 interface SlideRendererProps {
-  html: string;
+  slide: RenderableSlide;
   aspectRatio: AspectRatio;
   className?: string;
   style?: React.CSSProperties;
 }
 
+/**
+ * Read-only renderer: serializes the structured slide to HTML and shows it
+ * inside a sandboxed iframe scaled to fit the container. Used for thumbnails
+ * (filmstrip), cards (home page), and previews. The interactive editor is
+ * SlideCanvas, which composes this renderer with an overlay layer.
+ */
 export function SlideRenderer({
-  html,
+  slide,
   aspectRatio,
   className,
   style,
@@ -23,8 +37,8 @@ export function SlideRenderer({
   const { width: slideW, height: slideH } = DIMENSIONS[aspectRatio];
 
   const srcDoc = useMemo(
-    () => wrapSlideHtml(html, aspectRatio),
-    [html, aspectRatio]
+    () => wrapSlideHtml(serializeSlideToHtml(slide, aspectRatio), aspectRatio),
+    [slide, aspectRatio]
   );
 
   const measure = useCallback(() => {
