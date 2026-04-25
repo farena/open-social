@@ -3,7 +3,9 @@ import { spawn } from "child_process";
 import crossSpawn from "cross-spawn";
 import { getClaudePath, isClaudeAvailable } from "@/lib/claude-path";
 import { buildSystemPrompt } from "@/lib/chat-system-prompt";
+import { buildContextChatSystemPrompt } from "@/lib/context-chat-system-prompt";
 import { getBrand } from "@/lib/brand";
+import { getBusinessContext } from "@/lib/business-context";
 import { getCarousel } from "@/lib/carousels";
 import { getPreset } from "@/lib/style-presets";
 
@@ -27,6 +29,7 @@ export async function POST(request: NextRequest) {
     sessionId?: string;
     carouselId?: string;
     stylePresetId?: string;
+    mode?: "carousel" | "business-context";
   };
   try {
     body = await request.json();
@@ -34,7 +37,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
-  const { message, sessionId, carouselId, stylePresetId } = body;
+  const { message, sessionId, carouselId, stylePresetId, mode } = body;
 
   if (
     !message ||
@@ -45,11 +48,23 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Invalid message" }, { status: 400 });
   }
 
-  // Build dynamic system prompt with current brand + carousel + style preset context
-  const brand = await getBrand();
-  const carousel = carouselId ? await getCarousel(carouselId) : null;
-  const stylePreset = stylePresetId ? await getPreset(stylePresetId) : null;
-  const systemPrompt = buildSystemPrompt(brand, carousel, stylePreset);
+  // Build dynamic system prompt depending on mode
+  let systemPrompt: string;
+  let agentName: string;
+  if (mode === "business-context") {
+    const ctx = await getBusinessContext();
+    systemPrompt = buildContextChatSystemPrompt(ctx);
+    agentName = "business-context-chat";
+  } else {
+    const [brand, businessContext, carousel, stylePreset] = await Promise.all([
+      getBrand(),
+      getBusinessContext(),
+      carouselId ? getCarousel(carouselId) : Promise.resolve(null),
+      stylePresetId ? getPreset(stylePresetId) : Promise.resolve(null),
+    ]);
+    systemPrompt = buildSystemPrompt(brand, carousel, stylePreset, businessContext);
+    agentName = "carrusel-chat";
+  }
 
   const claudePath = getClaudePath();
   const abortController = new AbortController();
@@ -72,7 +87,7 @@ export async function POST(request: NextRequest) {
     "--max-budget-usd",
     "1.00",
     "--name",
-    "carrusel-chat",
+    agentName,
   ];
 
   if (sessionId) {

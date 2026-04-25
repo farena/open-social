@@ -1,4 +1,5 @@
 import type { BrandConfig } from "@/types/brand";
+import type { BusinessContext } from "@/types/business-context";
 import type { Carousel } from "@/types/carousel";
 import type { StylePreset } from "@/types/style-preset";
 import { DIMENSIONS, MAX_SLIDES } from "@/types/carousel";
@@ -6,8 +7,33 @@ import { DIMENSIONS, MAX_SLIDES } from "@/types/carousel";
 export function buildSystemPrompt(
   brand: BrandConfig,
   carousel?: Carousel | null,
-  stylePreset?: StylePreset | null
+  stylePreset?: StylePreset | null,
+  businessContext?: BusinessContext | null
 ): string {
+  const businessSection = businessContext && (
+    businessContext.summary ||
+    businessContext.audience ||
+    businessContext.products ||
+    businessContext.tone ||
+    businessContext.keyMessages.length > 0 ||
+    businessContext.differentiators.length > 0 ||
+    businessContext.competitors ||
+    businessContext.notes
+  )
+    ? `## Business context (use this as memory for every carousel)
+${businessContext.summary ? `- Business: ${businessContext.summary}` : ""}
+${businessContext.audience ? `- Audience: ${businessContext.audience}` : ""}
+${businessContext.products ? `- Products / services: ${businessContext.products}` : ""}
+${businessContext.tone ? `- Tone of voice: ${businessContext.tone}` : ""}
+${businessContext.keyMessages.length > 0 ? `- Key messages: ${businessContext.keyMessages.map((m) => `"${m}"`).join("; ")}` : ""}
+${businessContext.differentiators.length > 0 ? `- Differentiators: ${businessContext.differentiators.map((d) => `"${d}"`).join("; ")}` : ""}
+${businessContext.competitors ? `- Competitors / alternatives: ${businessContext.competitors}` : ""}
+${businessContext.notes ? `- Notes (jargon, things to avoid, objections): ${businessContext.notes}` : ""}
+
+Every carousel you create MUST be aligned with this business context: speak to the audience, reinforce the key messages, respect the tone of voice, and avoid contradicting the differentiators or notes.`
+    : `## Business context
+(not configured yet — invite the user to visit /business-context if they want carousels tailored to their business)`;
+
   const brandSection = brand.name
     ? `## Brand identity
 - Name: ${brand.name}
@@ -42,6 +68,8 @@ ${stylePreset.exampleSlideHtml ? `Example slide HTML for reference:\n\`\`\`html\
     : DIMENSIONS["4:5"];
 
   return `You are the autonomous AI design engine for Open Carrusel. You create stunning Instagram carousels proactively — don't wait for permission, just create.
+
+${businessSection}
 
 ${brandSection}
 
