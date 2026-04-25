@@ -3,7 +3,7 @@
 import { useEffect, useRef, type CSSProperties } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { SlideRenderer } from "./SlideRenderer";
+import { SlideCanvas } from "./SlideCanvas";
 import { SafeZoneOverlay } from "./SafeZoneOverlay";
 import type { Slide, AspectRatio } from "@/types/carousel";
 
@@ -67,7 +67,7 @@ export function CarouselPreview({
           className="oc-slide-in relative w-full h-full"
           style={{ "--oc-slide-from": `${direction}px` } as CSSProperties}
         >
-          <SlideRenderer
+          <SlideCanvas
             slide={slide}
             aspectRatio={aspectRatio}
             style={{ width: "100%", height: "100%" }}
