@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useCallback, type CSSProperties } from "react";
+import { useState, useCallback, type CSSProperties } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SlideCanvas } from "./SlideCanvas";
@@ -33,11 +33,12 @@ export function CarouselPreview({
   onUndoSlide,
 }: CarouselPreviewProps) {
   const slide = slides[activeIndex];
-  const prevIndexRef = useRef(activeIndex);
-  const direction = activeIndex >= prevIndexRef.current ? 12 : -12;
-  useEffect(() => {
-    prevIndexRef.current = activeIndex;
-  }, [activeIndex]);
+  const [prevIndex, setPrevIndex] = useState(activeIndex);
+  const [direction, setDirection] = useState(12);
+  if (prevIndex !== activeIndex) {
+    setDirection(activeIndex >= prevIndex ? 12 : -12);
+    setPrevIndex(activeIndex);
+  }
 
   if (!slide) {
     return (
