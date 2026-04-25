@@ -324,6 +324,7 @@ export default function CarouselEditorPage({ params }: PageProps) {
             activeIndex={activeSlide}
             onActiveChange={setActiveSlide}
             showSafeZones={showSafeZones}
+            onUndoSlide={handleUndoSlide}
             onSlidePersisted={(updated) => {
               setCarousel((prev) =>
                 prev

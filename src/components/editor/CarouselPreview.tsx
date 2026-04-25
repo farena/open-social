@@ -6,7 +6,9 @@ import { Button } from "@/components/ui/button";
 import { SlideCanvas } from "./SlideCanvas";
 import { SlideOverlay } from "./SlideOverlay";
 import { SafeZoneOverlay } from "./SafeZoneOverlay";
+import { PropertiesPanel } from "./PropertiesPanel";
 import { useSlideEditor } from "./useSlideEditor";
+import { useEditorShortcuts } from "./useEditorShortcuts";
 import type { Slide, AspectRatio } from "@/types/carousel";
 
 interface CarouselPreviewProps {
@@ -16,11 +18,8 @@ interface CarouselPreviewProps {
   activeIndex: number;
   onActiveChange: (index: number) => void;
   showSafeZones?: boolean;
-  /**
-   * Called after the editor's debounced persist so the page can update its
-   * carousel state with the server response.
-   */
   onSlidePersisted?: (slide: Slide) => void;
+  onUndoSlide?: (slideId: string) => void;
 }
 
 export function CarouselPreview({
@@ -31,6 +30,7 @@ export function CarouselPreview({
   onActiveChange,
   showSafeZones = false,
   onSlidePersisted,
+  onUndoSlide,
 }: CarouselPreviewProps) {
   const slide = slides[activeIndex];
   const prevIndexRef = useRef(activeIndex);
@@ -56,64 +56,67 @@ export function CarouselPreview({
   }
 
   return (
-    <div className="flex-1 flex flex-col min-h-0 min-w-0 bg-[#f0f0f0]">
-      <div className="flex-1 relative min-h-0 p-8 px-14">
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => onActiveChange(activeIndex - 1)}
-          disabled={activeIndex <= 0}
-          className="absolute left-2 top-1/2 -translate-y-1/2 z-10 bg-white/90 shadow-sm hover:bg-white h-9 w-9"
-          aria-label="Previous slide"
-        >
-          <ChevronLeft className="h-4 w-4" />
-        </Button>
+    <div className="flex-1 flex min-h-0 min-w-0">
+      <div className="flex-1 flex flex-col min-h-0 min-w-0 bg-[#f0f0f0]">
+        <div className="flex-1 relative min-h-0 p-8 px-14">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => onActiveChange(activeIndex - 1)}
+            disabled={activeIndex <= 0}
+            className="absolute left-2 top-1/2 -translate-y-1/2 z-10 bg-white/90 shadow-sm hover:bg-white h-9 w-9"
+            aria-label="Previous slide"
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
 
-        <div
-          key={slide.id}
-          className="oc-slide-in relative w-full h-full"
-          style={{ "--oc-slide-from": `${direction}px` } as CSSProperties}
-        >
-          <EditableSlide
-            carouselId={carouselId}
-            slide={slide}
-            aspectRatio={aspectRatio}
-            onSlidePersisted={onSlidePersisted}
-          />
-          <SafeZoneOverlay aspectRatio={aspectRatio} visible={showSafeZones} />
-        </div>
-
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => onActiveChange(activeIndex + 1)}
-          disabled={activeIndex >= slides.length - 1}
-          className="absolute right-2 top-1/2 -translate-y-1/2 z-10 bg-white/90 shadow-sm hover:bg-white h-9 w-9"
-          aria-label="Next slide"
-        >
-          <ChevronRight className="h-4 w-4" />
-        </Button>
-      </div>
-
-      {slides.length > 1 && (
-        <div className="flex items-center justify-center gap-1.5 pb-3 shrink-0">
-          {slides.map((_, i) => (
-            <button
-              key={i}
-              onClick={() => onActiveChange(i)}
-              className={`h-2 rounded-full transition-[width,background-color] duration-200 ease-[cubic-bezier(0.23,1,0.32,1)] ${
-                i === activeIndex
-                  ? "w-6 bg-accent"
-                  : "w-2 bg-foreground/20 hover:bg-foreground/40"
-              }`}
-              aria-label={`Go to slide ${i + 1}`}
+          <div
+            key={slide.id}
+            className="oc-slide-in relative w-full h-full"
+            style={{ "--oc-slide-from": `${direction}px` } as CSSProperties}
+          >
+            <EditableSlide
+              carouselId={carouselId}
+              slide={slide}
+              aspectRatio={aspectRatio}
+              onSlidePersisted={onSlidePersisted}
+              onUndoSlide={onUndoSlide}
             />
-          ))}
-          <span className="text-xs text-muted-foreground ml-2">
-            {activeIndex + 1}/{slides.length}
-          </span>
+            <SafeZoneOverlay aspectRatio={aspectRatio} visible={showSafeZones} />
+          </div>
+
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => onActiveChange(activeIndex + 1)}
+            disabled={activeIndex >= slides.length - 1}
+            className="absolute right-2 top-1/2 -translate-y-1/2 z-10 bg-white/90 shadow-sm hover:bg-white h-9 w-9"
+            aria-label="Next slide"
+          >
+            <ChevronRight className="h-4 w-4" />
+          </Button>
         </div>
-      )}
+
+        {slides.length > 1 && (
+          <div className="flex items-center justify-center gap-1.5 pb-3 shrink-0">
+            {slides.map((_, i) => (
+              <button
+                key={i}
+                onClick={() => onActiveChange(i)}
+                className={`h-2 rounded-full transition-[width,background-color] duration-200 ease-[cubic-bezier(0.23,1,0.32,1)] ${
+                  i === activeIndex
+                    ? "w-6 bg-accent"
+                    : "w-2 bg-foreground/20 hover:bg-foreground/40"
+                }`}
+                aria-label={`Go to slide ${i + 1}`}
+              />
+            ))}
+            <span className="text-xs text-muted-foreground ml-2">
+              {activeIndex + 1}/{slides.length}
+            </span>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
@@ -123,6 +126,7 @@ interface EditableSlideProps {
   slide: Slide;
   aspectRatio: AspectRatio;
   onSlidePersisted?: (slide: Slide) => void;
+  onUndoSlide?: (slideId: string) => void;
 }
 
 function EditableSlide({
@@ -130,6 +134,7 @@ function EditableSlide({
   slide: externalSlide,
   aspectRatio,
   onSlidePersisted,
+  onUndoSlide,
 }: EditableSlideProps) {
   const persist = useCallback(
     async (slide: Slide) => {
@@ -159,20 +164,34 @@ function EditableSlide({
     onPersist: persist,
   });
 
+  useEditorShortcuts({
+    slide,
+    selection,
+    dispatch,
+    onUndoRequest: onUndoSlide ? () => onUndoSlide(slide.id) : undefined,
+  });
+
   return (
-    <SlideCanvas
-      slide={slide}
-      aspectRatio={aspectRatio}
-      style={{ width: "100%", height: "100%" }}
-      overlay={({ scale, canvas }) => (
-        <SlideOverlay
-          slide={slide}
-          selection={selection}
-          scale={scale}
-          canvas={canvas}
-          dispatch={dispatch}
-        />
-      )}
-    />
+    <div className="flex w-full h-full">
+      <SlideCanvas
+        slide={slide}
+        aspectRatio={aspectRatio}
+        style={{ flex: 1, height: "100%" }}
+        overlay={({ scale, canvas }) => (
+          <SlideOverlay
+            slide={slide}
+            selection={selection}
+            scale={scale}
+            canvas={canvas}
+            dispatch={dispatch}
+          />
+        )}
+      />
+      <PropertiesPanel
+        slide={slide}
+        selection={selection}
+        dispatch={dispatch}
+      />
+    </div>
   );
 }
