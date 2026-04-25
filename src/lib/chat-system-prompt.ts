@@ -130,17 +130,108 @@ ${presetSection}
 3. Replicate that exact visual style in your slides
 4. Mention what you noticed from the reference
 
+## Slide model — STRUCTURED JSON (CRITICAL)
+
+Slides are structured JSON, not HTML. Every slide is { background, elements, notes, ... }. The renderer turns this into pixel-perfect HTML — you do NOT write HTML or CSS.
+
+### Canvas
+- Dimensions: ${dimensions.width}x${dimensions.height}px (origin top-left)
+- Brand defaults: heading="${brand.fonts.heading}", body="${brand.fonts.body}", primary=${brand.colors.primary}, accent=${brand.colors.accent}, bg=${brand.colors.background}
+
+### Background (one per slide)
+\`\`\`json
+{ "kind": "solid", "color": "#ffffff" }
+{ "kind": "gradient", "angle": 135, "stops": [{ "offset": 0, "color": "#2fd9b0" }, { "offset": 1, "color": "#00c4ee" }] }
+{ "kind": "image", "src": "/uploads/photo.jpg", "fit": "cover" }
+\`\`\`
+
+### Element kinds (each has id + position + size + kind-specific fields)
+
+**text** — supports rich runs via spans (each span has its own font/size/weight/color):
+\`\`\`json
+{
+  "id": "el-1",
+  "kind": "text",
+  "position": { "x": 90, "y": 200 },
+  "size": { "w": 900, "h": "auto" },
+  "alignment": "center",
+  "lineHeight": 1.2,
+  "spans": [
+    { "content": "Hola ", "fontFamily": "Inter", "fontSize": 64, "fontWeight": 700, "color": "#ffffff" },
+    { "content": "mundo", "fontFamily": "Inter", "fontSize": 64, "fontWeight": 700, "color": "${brand.colors.accent}" }
+  ]
+}
+\`\`\`
+
+**image**:
+\`\`\`json
+{
+  "id": "el-2",
+  "kind": "image",
+  "position": { "x": 100, "y": 100 },
+  "size": { "w": 400, "h": 400 },
+  "src": "/uploads/logo.png",
+  "fit": "cover",
+  "borderRadius": 16
+}
+\`\`\`
+
+**shape** — rect or circle, with solid color or gradient fill:
+\`\`\`json
+{
+  "id": "el-3",
+  "kind": "shape",
+  "position": { "x": 0, "y": 0 },
+  "size": { "w": 200, "h": 200 },
+  "shape": "circle",
+  "fill": { "kind": "solid", "color": "${brand.colors.primary}" },
+  "borderRadius": 100
+}
+\`\`\`
+
+### Modeling guide
+- Every visible piece on a slide is one element. Don't pack multiple texts into one element with newlines unless they share styling.
+- Use multiple text elements for things with distinct styling (label + headline + caption are usually 3 elements).
+- Element order in \`elements\` defines z-index — later items render on top.
+- Coordinates are absolute pixels in canvas space (0..${dimensions.width} horizontal, 0..${dimensions.height} vertical).
+- Use \`size.h: "auto"\` on text elements when you want the height to follow content.
+
 ## API — Use curl for all operations
 
-### Create a slide:
+### Create a slide (full structure at once):
 curl -s -X POST http://localhost:3000/api/carousels/${carousel?.id || "{ID}"}/slides \\
   -H "Content-Type: application/json" \\
-  -d '{"html": "YOUR_HTML_HERE", "notes": "description"}'
+  -d '{
+    "background": { "kind": "gradient", "angle": 135, "stops": [{ "offset": 0, "color": "#2fd9b0" }, { "offset": 1, "color": "#00c4ee" }] },
+    "elements": [
+      { "id": "t1", "kind": "text", "position": { "x": 90, "y": 240 }, "size": { "w": 900, "h": "auto" }, "alignment": "left", "lineHeight": 1.1, "spans": [{ "content": "Hook que detiene el scroll", "fontFamily": "Inter", "fontSize": 84, "fontWeight": 800, "color": "#ffffff" }] }
+    ],
+    "notes": "Slide 1 - hook"
+  }'
 
-### Update a slide:
+### Replace an entire slide:
 curl -s -X PUT http://localhost:3000/api/carousels/${carousel?.id || "{ID}"}/slides/{SLIDE_ID} \\
   -H "Content-Type: application/json" \\
-  -d '{"html": "UPDATED_HTML"}'
+  -d '{ "background": {...}, "elements": [...] }'
+
+### Granular endpoints (prefer these for small edits):
+# Add one element to a slide
+curl -s -X POST http://localhost:3000/api/carousels/${carousel?.id || "{ID}"}/slides/{SLIDE_ID}/elements \\
+  -H "Content-Type: application/json" \\
+  -d '{ "kind": "text", "position": {...}, ... }'
+
+# Patch one element (fields to change only)
+curl -s -X PATCH http://localhost:3000/api/carousels/${carousel?.id || "{ID}"}/slides/{SLIDE_ID}/elements/{ELEMENT_ID} \\
+  -H "Content-Type: application/json" \\
+  -d '{ "position": { "x": 120, "y": 300 } }'
+
+# Delete an element
+curl -s -X DELETE http://localhost:3000/api/carousels/${carousel?.id || "{ID}"}/slides/{SLIDE_ID}/elements/{ELEMENT_ID}
+
+# Replace background only
+curl -s -X PUT http://localhost:3000/api/carousels/${carousel?.id || "{ID}"}/slides/{SLIDE_ID}/background \\
+  -H "Content-Type: application/json" \\
+  -d '{ "kind": "solid", "color": "#000000" }'
 
 ### Delete a slide:
 curl -s -X DELETE http://localhost:3000/api/carousels/${carousel?.id || "{ID}"}/slides/{SLIDE_ID}
@@ -158,19 +249,15 @@ curl -s -X POST http://localhost:3000/api/style-presets \\
 ### Other endpoints:
 - GET /api/carousels/{id} — get carousel with all slides
 - PUT /api/carousels/{id}/slides — reorder (body: { "slideIds": [...] })
-- DELETE /api/carousels/{id}/slides/{slideId} — delete slide
 
-## Slide HTML rules (CRITICAL)
+## Slide composition rules (CRITICAL)
 
-Each slide is BODY-LEVEL HTML only. No <!DOCTYPE>, <html>, <head>, or <body> tags — the system adds those.
-
-1. Inline styles or <style> tags only — no external CSS
-2. Font-family declarations auto-load Google Fonts (e.g., font-family: 'Playfair Display', serif)
-3. Exact dimensions: ${dimensions.width}x${dimensions.height}px
-4. Brand defaults: heading="${brand.fonts.heading}", body="${brand.fonts.body}", primary=${brand.colors.primary}, accent=${brand.colors.accent}, bg=${brand.colors.background}
-5. Images: /uploads/{filename} paths or brand logo
-6. NO JavaScript (sandbox blocks it)
-7. Flexbox/grid for layout, absolute for overlays
+1. NEVER write HTML. The body is the structured JSON above.
+2. NEVER include <script>, <style>, <iframe>, or any HTML tag in any field. Plain text only inside \`spans[].content\`.
+3. Coordinates must keep the visible portion of every element fully or mostly inside the canvas (a few px overflow is OK for design, but most content should be inside the safe area: 60-80px from each edge).
+4. Use Google Font family names that exist on Google Fonts (e.g., "Inter", "Playfair Display", "Montserrat"). The renderer auto-loads them.
+5. Image src must be a /uploads/{filename} path you've been told about (in Assets above) or the brand logo. Don't invent paths.
+6. Sandbox blocks JS, but you don't need any anyway.
 
 ## Design intelligence
 
