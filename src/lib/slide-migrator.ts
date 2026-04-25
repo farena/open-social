@@ -67,17 +67,17 @@ export function parseHtmlToSlide(
       elements.push(result);
     } else {
       parsedAll = false;
+      break;
     }
   }
 
-  // If we found nothing parseable AND the slide had children, treat the whole
-  // thing as legacy.
-  if (!parsedAll && elements.length === 0) {
+  // Strict policy: all-or-nothing. If any child fails to parse, we preserve
+  // the original HTML so the slide renders identically to before. Partial
+  // parsing risks silently dropping content the user expected to see.
+  if (!parsedAll) {
     return { background, elements: [], legacyHtml: html };
   }
 
-  // If parsing was partial (some children couldn't be turned into elements),
-  // we still keep the parsed ones — the user can audit and re-create the rest.
   return { background, elements };
 }
 
@@ -179,10 +179,18 @@ function tryParseElement(
     return parseImage(el, styles);
   }
 
-  // Text or shape — text if it has content, shape if visually styled & empty
-  const innerText = extractText(el);
+  // If this absolutely-positioned div has a single text-only child div
+  // (no further nesting beyond inline tags), promote the parent's box and
+  // the child's typography.
+  const promoted = promoteSingleTextChild(el);
+  const sourceEl = promoted ?? el;
+  const sourceStyles = promoted
+    ? mergeTypography(styles, parseStyle(promoted.getAttribute("style") ?? ""))
+    : styles;
+
+  const innerText = extractText(sourceEl);
   if (innerText.trim().length > 0) {
-    return parseText(el, styles, innerText, canvas);
+    return parseText(el, sourceStyles, innerText, canvas);
   }
 
   // Empty positioned div — maybe a shape if it has bg color and a size
@@ -191,6 +199,57 @@ function tryParseElement(
   }
 
   return null;
+}
+
+/**
+ * If `el` contains exactly one element child and that child is a text-bearing
+ * div without absolute positioning, return the child. The parent contributes
+ * the box; the child contributes typography.
+ */
+function promoteSingleTextChild(el: HTMLElement): HTMLElement | null {
+  const children = childElements(el);
+  if (children.length !== 1) return null;
+  const child = children[0];
+  const childTag = child.rawTagName?.toLowerCase();
+  if (childTag !== "div" && childTag !== "span" && childTag !== "p") return null;
+  const childStyles = parseStyle(child.getAttribute("style") ?? "");
+  if (childStyles.position === "absolute") return null;
+  // Child must have its own typography (otherwise it's just a wrapper)
+  if (
+    !childStyles["font-size"] &&
+    !childStyles["font-weight"] &&
+    !childStyles["color"] &&
+    !childStyles["font-family"]
+  ) {
+    return null;
+  }
+  return child;
+}
+
+/**
+ * Combine parent's box-relevant styles with child's typography styles.
+ * The child wins on font/color; the parent wins on position/size.
+ */
+function mergeTypography(
+  parent: Record<string, string>,
+  child: Record<string, string>,
+): Record<string, string> {
+  const out = { ...parent };
+  for (const key of [
+    "font-size",
+    "font-weight",
+    "font-family",
+    "font-style",
+    "color",
+    "text-align",
+    "line-height",
+    "letter-spacing",
+    "text-decoration",
+    "text-transform",
+  ]) {
+    if (child[key] !== undefined) out[key] = child[key];
+  }
+  return out;
 }
 
 function parseText(
@@ -305,38 +364,44 @@ function computeBox(
   const width = parsePx(styles.width);
   const height = parsePx(styles.height);
 
-  // Need at least one horizontal anchor + one vertical anchor.
-  let x: number;
-  let y: number;
+  let x: number | undefined;
+  let y: number | undefined;
   let w = width;
   let h = height;
 
+  // Horizontal: prefer left, then derive from right.
   if (left != null) {
     x = left;
     if (w == null && right != null) w = canvas.width - left - right;
-  } else if (right != null && w != null) {
-    x = canvas.width - right - w;
   } else if (right != null) {
-    // No width — assume from right to left edge of canvas (unusable)
-    return null;
-  } else {
-    return null;
+    if (w != null) {
+      x = canvas.width - right - w;
+    } else {
+      // right-only without width — text can wrap to the natural max width.
+      // We anchor x at right margin; size will fall through to defaults.
+      x = Math.max(0, right);
+      w = canvas.width - x - right;
+    }
   }
 
+  // Vertical: prefer top, then derive from bottom.
   if (top != null) {
     y = top;
     if (h == null && bottom != null) h = canvas.height - top - bottom;
-  } else if (bottom != null && h != null) {
-    y = canvas.height - bottom - h;
   } else if (bottom != null) {
-    return null;
-  } else {
-    return null;
+    if (h != null) {
+      y = canvas.height - bottom - h;
+    } else {
+      y = Math.max(0, bottom);
+      h = canvas.height - y - bottom;
+    }
   }
 
-  // Final fallbacks for sizes (text might not declare width/height)
-  if (w == null) w = canvas.width - x - 40;
-  if (h == null) h = 100;
+  if (x == null || y == null) return null;
+
+  // Final fallbacks
+  if (w == null || w <= 0) w = Math.max(canvas.width - x - 40, 100);
+  if (h == null || h <= 0) h = 100;
 
   return { x, y, w, h };
 }
