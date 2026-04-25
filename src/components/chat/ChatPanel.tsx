@@ -4,6 +4,7 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { ChatMessage } from "./ChatMessage";
 import { ChatInput } from "./ChatInput";
 import { ReferenceImages } from "./ReferenceImages";
+import { Assets } from "./Assets";
 import { AlertCircle, Plug } from "lucide-react";
 import type { ReferenceImage } from "@/types/carousel";
 
@@ -272,6 +273,10 @@ export function ChatPanel({
         images={referenceImages}
         onImagesChange={() => onStreamEnd?.()}
       />
+
+      <Assets scope="carousel" carouselId={carouselId} />
+
+      <Assets scope="library" />
 
       <div ref={scrollRef} className="flex-1 overflow-y-auto">
         {messages.length === 0 && (

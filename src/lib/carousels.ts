@@ -1,5 +1,6 @@
 import { readDataSafe, writeData } from "./data";
 import { generateId, now } from "./utils";
+import type { Asset } from "@/types/asset";
 import type { Carousel, CarouselsData, Slide, AspectRatio, ReferenceImage } from "@/types/carousel";
 import { MAX_SLIDES, MAX_VERSIONS } from "@/types/carousel";
 
@@ -34,6 +35,7 @@ export async function createCarousel(
     aspectRatio,
     slides: [],
     referenceImages: [],
+    assets: [],
     chatSessionId: null,
     isTemplate: false,
     tags: [],
@@ -72,6 +74,7 @@ export async function duplicateCarousel(id: string): Promise<Carousel | null> {
       previousVersions: [],
     })),
     referenceImages: [...(source.referenceImages || [])],
+    assets: [...(source.assets || [])],
     chatSessionId: null,
     isTemplate: false,
     createdAt: now(),
@@ -230,6 +233,61 @@ export async function removeReferenceImage(
   if (idx === -1) return false;
 
   carousel.referenceImages.splice(idx, 1);
+  carousel.updatedAt = now();
+  await save(data);
+  return true;
+}
+
+// --- Carousel-scoped assets ---
+
+export async function addCarouselAsset(
+  carouselId: string,
+  asset: Asset
+): Promise<Asset | null> {
+  const data = await load();
+  const carousel = data.carousels.find((c) => c.id === carouselId);
+  if (!carousel) return null;
+
+  if (!carousel.assets) carousel.assets = [];
+  carousel.assets.unshift(asset);
+  carousel.updatedAt = now();
+  await save(data);
+  return asset;
+}
+
+export async function updateCarouselAsset(
+  carouselId: string,
+  assetId: string,
+  updates: Partial<Pick<Asset, "name" | "description">>
+): Promise<Asset | null> {
+  const data = await load();
+  const carousel = data.carousels.find((c) => c.id === carouselId);
+  if (!carousel || !carousel.assets) return null;
+  const asset = carousel.assets.find((a) => a.id === assetId);
+  if (!asset) return null;
+
+  if (updates.name !== undefined) asset.name = updates.name.trim() || asset.name;
+  if (updates.description !== undefined) {
+    const trimmed = updates.description.trim();
+    asset.description = trimmed.length > 0 ? trimmed : undefined;
+  }
+  carousel.updatedAt = now();
+  await save(data);
+  return asset;
+}
+
+export async function removeCarouselAsset(
+  carouselId: string,
+  assetId: string
+): Promise<boolean> {
+  const data = await load();
+  const carousel = data.carousels.find((c) => c.id === carouselId);
+  if (!carousel || !carousel.assets) return false;
+
+  const idx = carousel.assets.findIndex((a) => a.id === assetId);
+  if (idx === -1) return false;
+
+  carousel.assets.splice(idx, 1);
   carousel.updatedAt = now();
   await save(data);
   return true;

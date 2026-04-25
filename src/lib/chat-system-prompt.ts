@@ -1,3 +1,4 @@
+import type { Asset } from "@/types/asset";
 import type { BrandConfig } from "@/types/brand";
 import type { BusinessContext } from "@/types/business-context";
 import type { Carousel } from "@/types/carousel";
@@ -8,7 +9,8 @@ export function buildSystemPrompt(
   brand: BrandConfig,
   carousel?: Carousel | null,
   stylePreset?: StylePreset | null,
-  businessContext?: BusinessContext | null
+  businessContext?: BusinessContext | null,
+  assets?: Asset[] | null
 ): string {
   const businessSection = businessContext && (
     businessContext.summary ||
@@ -55,6 +57,27 @@ ${carousel.slides.length > 0 ? carousel.slides.map((s) => `  - Slide ${s.order +
 ${(carousel.referenceImages?.length ?? 0) > 0 ? `\n## Reference images (use Read to view these)\n${carousel.referenceImages.map((r) => `- "${r.name}" → ${r.absPath}`).join("\n")}` : ""}`
     : "";
 
+  const formatAssetLine = (a: Asset) =>
+    `- "${a.name}" → ${a.url}${a.description ? ` (${a.description})` : ""}`;
+
+  const carouselAssets = carousel?.assets ?? [];
+  const librarySection = assets && assets.length > 0
+    ? `### Library (reusable across all carousels)
+${assets.map(formatAssetLine).join("\n")}`
+    : "";
+  const carouselAssetsSection = carouselAssets.length > 0
+    ? `### This carousel's assets
+${carouselAssets.map(formatAssetLine).join("\n")}`
+    : "";
+  const assetsSection = (carouselAssets.length > 0 || (assets && assets.length > 0))
+    ? `## Assets (use these images IN slide HTML)
+Drop them into slides via \`<img src="URL">\` or CSS \`background-image: url('URL')\`. Use them when they fit the topic — logos for brand slides, photos for context, icons for emphasis. Don't invent /uploads/ paths; only reference URLs from the lists below. The user may refer to assets by name (e.g. "use the team-photo asset") — match by the name in quotes.
+
+${carouselAssetsSection}
+
+${librarySection}`
+    : "";
+
   const presetSection = stylePreset
     ? `## Active style preset: "${stylePreset.name}"
 Follow these design rules for ALL slides:
@@ -74,6 +97,8 @@ ${businessSection}
 ${brandSection}
 
 ${carouselSection}
+
+${assetsSection}
 
 ${presetSection}
 

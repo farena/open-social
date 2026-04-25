@@ -22,6 +22,7 @@ export interface Carousel {
   aspectRatio: AspectRatio;
   slides: Slide[];
   referenceImages: ReferenceImage[];
+  assets?: import("./asset").Asset[];
   caption?: string;
   hashtags?: string[];
   chatSessionId: string | null;
