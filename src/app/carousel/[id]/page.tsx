@@ -274,7 +274,7 @@ export default function CarouselEditorPage({ params }: PageProps) {
               onDeleteCarousel={handleDeleteCarousel}
               chatOpen={chatOpen}
               onToggleChat={() => setChatOpen(!chatOpen)}
-              carouselId={carousel.id}
+              contentItemId={carousel.id}
               slideCount={carousel.slides.length}
             />
             <CarouselPreviewEmpty />
@@ -285,7 +285,7 @@ export default function CarouselEditorPage({ params }: PageProps) {
           </div>
         ) : (
           <EditorBody
-            carouselId={carousel.id}
+            contentItemId={carousel.id}
             slides={carousel.slides}
             aspectRatio={carousel.aspectRatio}
             activeIndex={activeSlide}
@@ -321,7 +321,7 @@ export default function CarouselEditorPage({ params }: PageProps) {
                 onDeleteCarousel={handleDeleteCarousel}
                 chatOpen={chatOpen}
                 onToggleChat={() => setChatOpen(!chatOpen)}
-                carouselId={carousel.id}
+                contentItemId={carousel.id}
                 slideCount={carousel.slides.length}
               />
             }

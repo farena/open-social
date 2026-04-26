@@ -8,7 +8,7 @@ import { useEditorShortcuts } from "./useEditorShortcuts";
 import type { Slide, AspectRatio } from "@/types/carousel";
 
 interface EditorBodyProps {
-  carouselId: string;
+  contentItemId: string;
   slides: Slide[];
   aspectRatio: AspectRatio;
   activeIndex: number;
@@ -32,7 +32,7 @@ interface EditorBodyProps {
  * and vice versa without prop-drilling through CarouselPreview.
  */
 export function EditorBody({
-  carouselId,
+  contentItemId,
   slides,
   aspectRatio,
   activeIndex,
@@ -48,7 +48,7 @@ export function EditorBody({
   const persist = useCallback(
     async (slide: Slide) => {
       const res = await fetch(
-        `/api/carousels/${carouselId}/slides/${slide.id}`,
+        `/api/content/${contentItemId}/slides/${slide.id}`,
         {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
@@ -66,7 +66,7 @@ export function EditorBody({
         onSlidePersisted(updated);
       }
     },
-    [carouselId, onSlidePersisted],
+    [contentItemId, onSlidePersisted],
   );
 
   const { slide, selection, dispatch } = useSlideEditor(activeSlide, {

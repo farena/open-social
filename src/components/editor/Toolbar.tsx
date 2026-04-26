@@ -16,7 +16,7 @@ interface ToolbarProps {
   onDeleteCarousel: () => void;
   chatOpen: boolean;
   onToggleChat: () => void;
-  carouselId: string;
+  contentItemId: string;
   slideCount: number;
 }
 
@@ -34,7 +34,7 @@ export function Toolbar({
   onDeleteCarousel,
   chatOpen,
   onToggleChat,
-  carouselId,
+  contentItemId,
   slideCount,
 }: ToolbarProps) {
   return (
@@ -90,7 +90,7 @@ export function Toolbar({
       >
         {chatOpen ? "Hide Chat" : "Show Chat"}
       </button>
-      <ExportButton carouselId={carouselId} slideCount={slideCount} />
+      <ExportButton contentItemId={contentItemId} slideCount={slideCount} />
     </div>
   );
 }

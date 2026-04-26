@@ -5,11 +5,11 @@ import { Download, Loader2, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface ExportButtonProps {
-  carouselId: string;
+  contentItemId: string;
   slideCount: number;
 }
 
-export function ExportButton({ carouselId, slideCount }: ExportButtonProps) {
+export function ExportButton({ contentItemId, slideCount }: ExportButtonProps) {
   const [exporting, setExporting] = useState(false);
   const [progress, setProgress] = useState({ current: 0, total: 0 });
   const [done, setDone] = useState(false);
@@ -21,7 +21,7 @@ export function ExportButton({ carouselId, slideCount }: ExportButtonProps) {
     setProgress({ current: 0, total: slideCount });
 
     try {
-      const response = await fetch(`/api/carousels/${carouselId}/export`, {
+      const response = await fetch(`/api/content/${contentItemId}/export`, {
         method: "POST",
       });
 
@@ -58,7 +58,7 @@ export function ExportButton({ carouselId, slideCount }: ExportButtonProps) {
                   // Trigger download
                   const a = document.createElement("a");
                   a.href = data.downloadUrl;
-                  a.download = `carousel-${carouselId}.zip`;
+                  a.download = `carousel-${contentItemId}.zip`;
                   a.click();
                   setDone(true);
                 }
@@ -74,7 +74,7 @@ export function ExportButton({ carouselId, slideCount }: ExportButtonProps) {
         const url = URL.createObjectURL(blob);
         const a = document.createElement("a");
         a.href = url;
-        a.download = `carousel-${carouselId}.zip`;
+        a.download = `carousel-${contentItemId}.zip`;
         a.click();
         URL.revokeObjectURL(url);
         setDone(true);
