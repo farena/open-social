@@ -1,12 +1,31 @@
 import { NextResponse } from "next/server";
-import { updateSlide, deleteSlide } from "@/lib/content-items";
+import { updateSlide, deleteSlide, getContentItem } from "@/lib/content-items";
 import { slideUpdateSchema } from "@/lib/slide-schema";
+
+function isAgentRequest(request: Request): boolean {
+  return request.headers.get("x-agent-origin") === "claude";
+}
 
 export async function PUT(
   request: Request,
   { params }: { params: Promise<{ id: string; slideId: string }> }
 ) {
   const { id, slideId } = await params;
+
+  // Fail fast: agent cannot mutate existing slides while generation is in progress.
+  if (isAgentRequest(request)) {
+    const item = await getContentItem(id);
+    if (item?.state === "generating") {
+      return NextResponse.json(
+        {
+          error:
+            "Agent cannot mutate slides during generation — only POST is allowed. User edits may be running in parallel.",
+        },
+        { status: 409 }
+      );
+    }
+  }
+
   try {
     const body = await request.json();
 
@@ -47,10 +66,25 @@ export async function PUT(
 }
 
 export async function DELETE(
-  _request: Request,
+  request: Request,
   { params }: { params: Promise<{ id: string; slideId: string }> }
 ) {
   const { id, slideId } = await params;
+
+  // Fail fast: agent cannot delete slides while generation is in progress.
+  if (isAgentRequest(request)) {
+    const contentItem = await getContentItem(id);
+    if (contentItem?.state === "generating") {
+      return NextResponse.json(
+        {
+          error:
+            "Agent cannot mutate slides during generation — only POST is allowed. User edits may be running in parallel.",
+        },
+        { status: 409 }
+      );
+    }
+  }
+
   const item = await deleteSlide(id, slideId);
   if (!item) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });

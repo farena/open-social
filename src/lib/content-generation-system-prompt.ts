@@ -131,7 +131,11 @@ Authoring tips:
   // --- API instructions ---
   const apiSection = `## API — POST slides one by one via curl
 
-**CRITICAL: only POST. Never PUT or DELETE existing slides — the user may be editing them in parallel.**
+**CRITICAL — append-only contract (server-enforced):**
+- ONLY use \`POST /api/content/${contentItem.id}/slides\` to add slides.
+- NEVER PUT or DELETE existing slides. The server will reject those calls with 409 Conflict if you try — the user may be editing slides in parallel and any mutation attempt will be blocked.
+- Do NOT re-read existing slides (no GET on /slides). You are building new slides from scratch based on the content item spec above.
+- ALWAYS include the header \`X-Agent-Origin: claude\` on EVERY curl call (POST included). The server uses this to identify agent requests.
 
 ### Add a slide:
 \`\`\`bash
@@ -154,7 +158,7 @@ curl -s -X POST http://localhost:3000/api/content/${contentItem.id}/slides \\
   }'
 \`\`\`
 
-Always include the \`X-Agent-Origin: claude\` header on every POST.`;
+If a curl returns HTTP 409, stop immediately — do not retry with PUT/DELETE. Report the error and stop.`;
 
   // --- Generation instructions ---
   const generationInstructions =
@@ -230,5 +234,7 @@ ${designSection}
 - BRAND CONSISTENCY: Use brand colors, fonts, and style across every slide.
 - CREATIVE VARIETY: Vary slide layouts — don't repeat the same layout.
 - BRIEF OUTPUT: After each curl, confirm in one sentence what was created.
-- STOP WHEN DONE: Once all slides are posted, output a brief summary and stop. Do not offer to do more.`;
+- STOP WHEN DONE: Once all slides are posted, output a brief summary and stop. Do not offer to do more.
+- APPEND-ONLY: You are in a live session. The user may be editing the content item in their browser right now. Your ONLY permitted write operation is POST to add new slides. Any PUT or DELETE to existing slides will be rejected by the server (409). Do not attempt them.
+- HEADER REQUIRED: Every single curl call MUST include \`-H "X-Agent-Origin: claude"\`. Without it the server cannot distinguish your writes from user edits.`;
 }
