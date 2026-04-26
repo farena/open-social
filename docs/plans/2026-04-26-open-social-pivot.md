@@ -430,8 +430,8 @@ Each task targets <250 LOC and has a Playwright or curl validation step before m
 - Modify: `src/lib/chat-system-prompt.ts` — already covered in Task 7.1 but double-check no stale URLs
 - Modify: `src/lib/context-chat-system-prompt.ts` — references to "carousels" → "content items" if any
 
-- [ ] **Step 1: Read both files, update terminology**
-- [ ] **Step 2: Commit** — `docs: update CLAUDE.md + prompts for ContentItem model`
+- [x] **Step 1: Read both files, update terminology**
+- [x] **Step 2: Commit** — `docs: update CLAUDE.md + prompts for ContentItem model`
 
 ---
 

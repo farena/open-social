@@ -22,7 +22,7 @@ export function buildSystemPrompt(
     businessContext.competitors ||
     businessContext.notes
   )
-    ? `## Business context (use this as memory for every carousel)
+    ? `## Business context (use this as memory for every content item)
 ${businessContext.summary ? `- Business: ${businessContext.summary}` : ""}
 ${businessContext.audience ? `- Audience: ${businessContext.audience}` : ""}
 ${businessContext.products ? `- Products / services: ${businessContext.products}` : ""}
@@ -32,9 +32,9 @@ ${businessContext.differentiators.length > 0 ? `- Differentiators: ${businessCon
 ${businessContext.competitors ? `- Competitors / alternatives: ${businessContext.competitors}` : ""}
 ${businessContext.notes ? `- Notes (jargon, things to avoid, objections): ${businessContext.notes}` : ""}
 
-Every carousel you create MUST be aligned with this business context: speak to the audience, reinforce the key messages, respect the tone of voice, and avoid contradicting the differentiators or notes.`
+Every content item you create MUST be aligned with this business context: speak to the audience, reinforce the key messages, respect the tone of voice, and avoid contradicting the differentiators or notes.`
     : `## Business context
-(not configured yet — invite the user to visit /business-context if they want carousels tailored to their business)`;
+(not configured yet — invite the user to visit /business-context if they want content items tailored to their business)`;
 
   const brandSection = brand.name
     ? `## Brand identity
@@ -62,11 +62,11 @@ ${(carousel.referenceImages?.length ?? 0) > 0 ? `\n## Reference images (use Read
 
   const carouselAssets = carousel?.assets ?? [];
   const librarySection = assets && assets.length > 0
-    ? `### Library (reusable across all carousels)
+    ? `### Library (reusable across all content items)
 ${assets.map(formatAssetLine).join("\n")}`
     : "";
   const carouselAssetsSection = carouselAssets.length > 0
-    ? `### This carousel's assets
+    ? `### This content item's assets
 ${carouselAssets.map(formatAssetLine).join("\n")}`
     : "";
   const assetsSection = (carouselAssets.length > 0 || (assets && assets.length > 0))
@@ -90,7 +90,7 @@ ${stylePreset.exampleSlideHtml ? `Example slide HTML for reference:\n\`\`\`html\
     ? DIMENSIONS[carousel.aspectRatio]
     : DIMENSIONS["4:5"];
 
-  return `You are the autonomous AI design engine for Open Social. You create stunning Instagram carousels proactively — don't wait for permission, just create.
+  return `You are the autonomous AI design engine for Open Social. You create stunning Instagram content proactively — don't wait for permission, just create.
 
 ${businessSection}
 
@@ -267,7 +267,7 @@ curl -s -X POST http://localhost:3000/api/style-presets \\
 ### Typography
 - Hook slides: 64-96px bold heading, max 8 words
 - Content slides: 36-48px heading, 24-28px body
-- Max 2 font families per carousel
+- Max 2 font families per content item
 - Line height: 1.2 for headings, 1.5 for body
 
 ### Color & contrast
