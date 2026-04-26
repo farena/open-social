@@ -317,7 +317,7 @@ function handleEvent(
     return;
   }
 
-  // Extract streaming text tokens
+  // Extract streaming text tokens and tool_use blocks
   if (event.type === "assistant" && event.message) {
     const msg = event.message as Record<string, unknown>;
     if (msg.type === "message" && Array.isArray(msg.content)) {
@@ -327,6 +327,72 @@ function handleEvent(
           controller.enqueue(
             encoder.encode(
               `data: ${JSON.stringify({ type: "token", text: b.text })}\n\n`
+            )
+          );
+        } else if (b.type === "tool_use") {
+          const id = b.id as string | undefined;
+          const name = b.name as string | undefined;
+          const input = (b.input ?? {}) as Record<string, unknown>;
+          let summary: string;
+          if (name === "Bash" && typeof input.command === "string") {
+            summary =
+              input.command.length > 120
+                ? input.command.slice(0, 120) + "…"
+                : input.command;
+          } else if (name === "Read" && typeof input.file_path === "string") {
+            summary = input.file_path;
+          } else if (name === "WebFetch" && typeof input.url === "string") {
+            summary =
+              input.url.length > 80
+                ? input.url.slice(0, 80) + "…"
+                : input.url;
+          } else {
+            summary = JSON.stringify(input).slice(0, 100);
+          }
+          controller.enqueue(
+            encoder.encode(
+              `data: ${JSON.stringify({ type: "tool_use", id, name, summary })}\n\n`
+            )
+          );
+        }
+      }
+    }
+    return;
+  }
+
+  // Extract tool_result blocks from user messages (Claude CLI sends tool results as user events)
+  if (event.type === "user" && event.message) {
+    const msg = event.message as Record<string, unknown>;
+    if (Array.isArray(msg.content)) {
+      for (const block of msg.content) {
+        const b = block as Record<string, unknown>;
+        if (b.type === "tool_result") {
+          const toolUseId = b.tool_use_id as string | undefined;
+          const isError = !!b.is_error;
+          const rawContent = b.content;
+          let text = "";
+          if (typeof rawContent === "string") {
+            text = rawContent;
+          } else if (Array.isArray(rawContent)) {
+            text = rawContent
+              .map((c: unknown) => {
+                const cb = c as Record<string, unknown>;
+                return cb.type === "text" && typeof cb.text === "string"
+                  ? cb.text
+                  : "";
+              })
+              .join("");
+          }
+          const limit = isError ? 120 : 80;
+          const summary = text.length > limit ? text.slice(0, limit) + "…" : text;
+          controller.enqueue(
+            encoder.encode(
+              `data: ${JSON.stringify({
+                type: "tool_result",
+                id: toolUseId,
+                isError,
+                summary,
+              })}\n\n`
             )
           );
         }

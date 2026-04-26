@@ -1,15 +1,10 @@
 "use client";
 
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useRef, useEffect } from "react";
 import { ChatMessage } from "@/components/chat/ChatMessage";
 import { ChatInput } from "@/components/chat/ChatInput";
 import { AlertCircle, Plug } from "lucide-react";
-
-interface Message {
-  id: string;
-  role: "user" | "assistant";
-  content: string;
-}
+import { useChatStream } from "@/lib/use-chat-stream";
 
 interface IdeationChatProps {
   claudeAvailable: boolean;
@@ -23,42 +18,13 @@ export function IdeationChat({
   claudeAvailable,
   onItemsCreated,
 }: IdeationChatProps) {
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [isStreaming, setIsStreaming] = useState(false);
-  const [sessionId, setSessionId] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
-  const abortRef = useRef<AbortController | null>(null);
 
-  useEffect(() => {
-    const storedSession = localStorage.getItem(SESSION_KEY);
-    if (storedSession) setSessionId(storedSession);
-    try {
-      const storedMessages = localStorage.getItem(STORAGE_KEY);
-      if (storedMessages) setMessages(JSON.parse(storedMessages));
-    } catch {
-      // ignore corrupted data
-    }
-  }, []);
-
-  const persistMessages = useCallback((msgs: Message[]) => {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(msgs));
-    } catch {
-      // ignore quota errors
-    }
-  }, []);
-
-  const handleClearChat = useCallback(() => {
-    setMessages([]);
-    setSessionId(null);
-    localStorage.removeItem(STORAGE_KEY);
-    localStorage.removeItem(SESSION_KEY);
-  }, []);
-
-  const handleStopGenerating = useCallback(() => {
-    abortRef.current?.abort();
-  }, []);
+  const { messages, isStreaming, error, send, clear, stop } = useChatStream({
+    storageKey: STORAGE_KEY,
+    sessionKey: SESSION_KEY,
+    onStreamEnd: onItemsCreated,
+  });
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -66,132 +32,9 @@ export function IdeationChat({
     }
   }, [messages]);
 
-  const handleSend = useCallback(
-    async (message: string) => {
-      if (isStreaming) return;
-      setError(null);
-      setIsStreaming(true);
-
-      const userMsg: Message = {
-        id: crypto.randomUUID(),
-        role: "user",
-        content: message,
-      };
-      setMessages((prev) => [...prev, userMsg]);
-
-      const assistantId = crypto.randomUUID();
-      setMessages((prev) => [
-        ...prev,
-        { id: assistantId, role: "assistant", content: "" },
-      ]);
-
-      abortRef.current = new AbortController();
-
-      try {
-        const response = await fetch("/api/chat", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            message,
-            sessionId,
-            mode: "ideation",
-          }),
-          signal: abortRef.current.signal,
-        });
-
-        if (!response.ok) {
-          const err = await response.json().catch(() => ({}));
-          throw new Error(
-            (err as { error?: string }).error || "Failed to connect to AI"
-          );
-        }
-
-        const reader = response.body?.getReader();
-        if (!reader) throw new Error("No response stream");
-
-        const decoder = new TextDecoder();
-        let accumulated = "";
-        let buffer = "";
-
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-
-          buffer += decoder.decode(value, { stream: true });
-          const lines = buffer.split("\n");
-          buffer = lines.pop() ?? "";
-
-          for (const line of lines) {
-            if (line.startsWith("data: ")) {
-              try {
-                const data = JSON.parse(line.slice(6));
-                if (data.type === "token" && typeof data.text === "string") {
-                  accumulated += data.text;
-                  setMessages((prev) =>
-                    prev.map((m) =>
-                      m.id === assistantId ? { ...m, content: accumulated } : m
-                    )
-                  );
-                } else if (
-                  data.type === "result" &&
-                  typeof data.text === "string"
-                ) {
-                  accumulated = data.text;
-                  setMessages((prev) =>
-                    prev.map((m) =>
-                      m.id === assistantId ? { ...m, content: accumulated } : m
-                    )
-                  );
-                }
-                if (data.sessionId) {
-                  setSessionId(data.sessionId);
-                  localStorage.setItem(SESSION_KEY, data.sessionId);
-                }
-              } catch {
-                // skip unparseable
-              }
-            }
-          }
-        }
-
-        // Drain remaining buffer
-        if (buffer.trim()) {
-          for (const line of buffer.split("\n")) {
-            if (line.startsWith("data: ")) {
-              try {
-                const data = JSON.parse(line.slice(6));
-                if (data.sessionId) {
-                  setSessionId(data.sessionId);
-                  localStorage.setItem(SESSION_KEY, data.sessionId);
-                }
-              } catch {
-                // skip
-              }
-            }
-          }
-        }
-
-        // Notify parent to refetch content items now that Claude may have POSTed new ones
-        onItemsCreated?.();
-      } catch (err) {
-        if (err instanceof Error && err.name === "AbortError") return;
-        const message =
-          err instanceof Error ? err.message : "An unexpected error occurred";
-        setError(message);
-        setMessages((prev) =>
-          prev.filter((m) => m.id !== assistantId || m.content.length > 0)
-        );
-      } finally {
-        setIsStreaming(false);
-        abortRef.current = null;
-        setMessages((prev) => {
-          persistMessages(prev);
-          return prev;
-        });
-      }
-    },
-    [isStreaming, sessionId, persistMessages, onItemsCreated]
-  );
+  const handleSend = async (message: string) => {
+    await send(message, { mode: "ideation" });
+  };
 
   if (!claudeAvailable) {
     return (
@@ -224,7 +67,7 @@ export function IdeationChat({
         </div>
         {messages.length > 0 && (
           <button
-            onClick={handleClearChat}
+            onClick={clear}
             className="text-[10px] text-muted-foreground hover:text-destructive transition-colors px-1.5 py-0.5 rounded"
           >
             Clear
@@ -245,7 +88,7 @@ export function IdeationChat({
           <ChatMessage
             key={msg.id}
             role={msg.role}
-            content={msg.content}
+            parts={msg.parts}
             isStreaming={
               isStreaming &&
               msg.role === "assistant" &&
@@ -264,7 +107,7 @@ export function IdeationChat({
       <ChatInput
         onSend={handleSend}
         isStreaming={isStreaming}
-        onStop={handleStopGenerating}
+        onStop={stop}
       />
     </div>
   );

@@ -1,18 +1,13 @@
 "use client";
 
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useRef, useEffect } from "react";
 import { ChatMessage } from "./ChatMessage";
 import { ChatInput } from "./ChatInput";
 import { ReferenceImages } from "./ReferenceImages";
 import { Assets } from "./Assets";
 import { AlertCircle, Plug } from "lucide-react";
 import type { ReferenceImage } from "@/types/carousel";
-
-interface Message {
-  id: string;
-  role: "user" | "assistant";
-  content: string;
-}
+import { useChatStream } from "@/lib/use-chat-stream";
 
 interface ChatPanelProps {
   contentItemId: string;
@@ -31,47 +26,13 @@ export function ChatPanel({
   onStreamEnd,
   chatInputRef,
 }: ChatPanelProps) {
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [isStreaming, setIsStreaming] = useState(false);
-  const [sessionId, setSessionId] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
-  const abortRef = useRef<AbortController | null>(null);
 
-  // Load session ID and chat history from localStorage
-  useEffect(() => {
-    const storedSession = localStorage.getItem(`chat-session-${contentItemId}`);
-    if (storedSession) setSessionId(storedSession);
-    try {
-      const storedMessages = localStorage.getItem(`chat-messages-${contentItemId}`);
-      if (storedMessages) setMessages(JSON.parse(storedMessages));
-    } catch {
-      // ignore corrupted data
-    }
-  }, [contentItemId]);
-
-  // Persist messages to localStorage
-  const persistMessages = useCallback(
-    (msgs: Message[]) => {
-      try {
-        localStorage.setItem(`chat-messages-${contentItemId}`, JSON.stringify(msgs));
-      } catch {
-        // ignore quota errors
-      }
-    },
-    [contentItemId]
-  );
-
-  const handleClearChat = useCallback(() => {
-    setMessages([]);
-    setSessionId(null);
-    localStorage.removeItem(`chat-messages-${contentItemId}`);
-    localStorage.removeItem(`chat-session-${contentItemId}`);
-  }, [contentItemId]);
-
-  const handleStopGenerating = useCallback(() => {
-    abortRef.current?.abort();
-  }, []);
+  const { messages, isStreaming, error, send, clear, stop } = useChatStream({
+    storageKey: `chat-messages-${contentItemId}`,
+    sessionKey: `chat-session-${contentItemId}`,
+    onStreamEnd,
+  });
 
   // Auto-scroll to bottom
   useEffect(() => {
@@ -80,155 +41,11 @@ export function ChatPanel({
     }
   }, [messages]);
 
-  const handleSend = useCallback(
-    async (message: string) => {
-      if (isStreaming) return;
-      setError(null);
-      setIsStreaming(true);
-      onStreamStart?.();
-
-      // Add user message
-      const userMsg: Message = {
-        id: crypto.randomUUID(),
-        role: "user",
-        content: message,
-      };
-      setMessages((prev) => [...prev, userMsg]);
-
-      // Add empty assistant message for streaming
-      const assistantId = crypto.randomUUID();
-      setMessages((prev) => [
-        ...prev,
-        { id: assistantId, role: "assistant", content: "" },
-      ]);
-
-      abortRef.current = new AbortController();
-
-      try {
-        const response = await fetch("/api/chat", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            message,
-            sessionId,
-            contentItemId,
-            mode: "content-generation",
-          }),
-          signal: abortRef.current.signal,
-        });
-
-        if (!response.ok) {
-          const err = await response.json().catch(() => ({}));
-          throw new Error(
-            (err as { error?: string }).error || "Failed to connect to AI"
-          );
-        }
-
-        const reader = response.body?.getReader();
-        if (!reader) throw new Error("No response stream");
-
-        const decoder = new TextDecoder();
-        let accumulated = "";
-        let buffer = "";
-
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-
-          buffer += decoder.decode(value, { stream: true });
-          const lines = buffer.split("\n");
-          buffer = lines.pop() ?? "";
-
-          for (const line of lines) {
-            if (line.startsWith("data: ")) {
-              try {
-                const data = JSON.parse(line.slice(6));
-                if (data.type === "token" && typeof data.text === "string") {
-                  accumulated += data.text;
-                  setMessages((prev) =>
-                    prev.map((m) =>
-                      m.id === assistantId
-                        ? { ...m, content: accumulated }
-                        : m
-                    )
-                  );
-                } else if (data.type === "result" && typeof data.text === "string") {
-                  accumulated = data.text; // result is the final complete text
-                  setMessages((prev) =>
-                    prev.map((m) =>
-                      m.id === assistantId
-                        ? { ...m, content: accumulated }
-                        : m
-                    )
-                  );
-                }
-              } catch {
-                // skip unparseable
-              }
-            } else if (line.startsWith("event: done")) {
-              // Next line has the done data
-            } else if (
-              line.startsWith("data: ") &&
-              line.includes("sessionId")
-            ) {
-              try {
-                const data = JSON.parse(line.slice(6));
-                if (data.sessionId) {
-                  setSessionId(data.sessionId);
-                  localStorage.setItem(
-                    `chat-session-${contentItemId}`,
-                    data.sessionId
-                  );
-                }
-              } catch {
-                // skip
-              }
-            }
-          }
-        }
-
-        // Parse any remaining buffer for the done event
-        if (buffer.trim()) {
-          for (const line of buffer.split("\n")) {
-            if (line.startsWith("data: ")) {
-              try {
-                const data = JSON.parse(line.slice(6));
-                if (data.sessionId) {
-                  setSessionId(data.sessionId);
-                  localStorage.setItem(
-                    `chat-session-${contentItemId}`,
-                    data.sessionId
-                  );
-                }
-              } catch {
-                // skip
-              }
-            }
-          }
-        }
-      } catch (err) {
-        if (err instanceof Error && err.name === "AbortError") return;
-        const message = err instanceof Error ? err.message : "An unexpected error occurred";
-        setError(message);
-        // Remove empty assistant message on error
-        setMessages((prev) =>
-          prev.filter(
-            (m) => m.id !== assistantId || m.content.length > 0
-          )
-        );
-      } finally {
-        setIsStreaming(false);
-        abortRef.current = null;
-        // Persist messages after stream completes
-        setMessages((prev) => {
-          persistMessages(prev);
-          return prev;
-        });
-        onStreamEnd?.();
-      }
-    },
-    [isStreaming, sessionId, contentItemId, onStreamStart, onStreamEnd, persistMessages]
-  );
+  const handleSend = async (message: string) => {
+    if (isStreaming) return;
+    onStreamStart?.();
+    await send(message, { contentItemId, mode: "content-generation" });
+  };
 
   if (!claudeAvailable) {
     return (
@@ -261,7 +78,7 @@ export function ChatPanel({
         </div>
         {messages.length > 0 && (
           <button
-            onClick={handleClearChat}
+            onClick={clear}
             className="text-[10px] text-muted-foreground hover:text-destructive transition-colors px-1.5 py-0.5 rounded"
           >
             Clear
@@ -292,7 +109,7 @@ export function ChatPanel({
           <ChatMessage
             key={msg.id}
             role={msg.role}
-            content={msg.content}
+            parts={msg.parts}
             isStreaming={
               isStreaming &&
               msg.role === "assistant" &&
@@ -312,7 +129,7 @@ export function ChatPanel({
         onSend={handleSend}
         isStreaming={isStreaming}
         textareaRef={chatInputRef}
-        onStop={handleStopGenerating}
+        onStop={stop}
       />
     </div>
   );
