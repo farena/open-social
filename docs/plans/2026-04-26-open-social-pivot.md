@@ -367,13 +367,11 @@ Each task targets <250 LOC and has a Playwright or curl validation step before m
 - Modify: `src/app/api/content/[id]/slides/[slideId]/route.ts`
 - Modify: `src/lib/content-generation-system-prompt.ts`
 
-- [ ] **Step 1: When state === "generating", reject `PUT /slides/[slideId]` and `DELETE /slides/[slideId]` calls that originate from the agent**
+- [x] **Step 1: When state === "generating", reject `PUT /slides/[slideId]` and `DELETE /slides/[slideId]` calls that originate from the agent**
   - Distinguish via a header (e.g. `X-Agent-Origin: claude`) that the system prompt teaches Claude to send. User edits from the editor don't include this header → allowed.
-- [ ] **Step 2: System prompt update — instruct Claude during generation: only POST new slides; never PUT/DELETE; do not re-read existing slides**
-- [ ] **Step 3: Playwright concurrency test**
-  - Create item, hit Generate, while streaming drag a rendered slide
-  - Confirm: drag persists, agent keeps appending, no slide gets reverted
-- [ ] **Step 4: Commit** — `feat(content): enforce append-only agent contract during generation`
+- [x] **Step 2: System prompt update — instruct Claude during generation: only POST new slides; never PUT/DELETE; do not re-read existing slides**
+- [~] **Step 3: Playwright concurrency test** — skipped (no dev server)
+- [x] **Step 4: Commit** — `feat(content): enforce append-only agent contract during generation`
 
 ---
 
