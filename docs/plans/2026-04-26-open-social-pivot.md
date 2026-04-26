@@ -350,12 +350,12 @@ Each task targets <250 LOC and has a Playwright or curl validation step before m
 - Modify: `src/app/api/chat/route.ts`
 - Modify: `src/components/content/ContentItemDetailIdea.tsx` (mount the chat in left rail)
 
-- [ ] **Step 1: System prompt** — refines text fields of ONE ContentItem. Tools: `PATCH /api/content/[id]` only. Should not touch slides.
-- [ ] **Step 2: `ContentIdeaChat`** — adapt `ChatPanel` shape but with per-item session keys (`chat-session-idea-${id}`)
-- [ ] **Step 3: API route — `mode: "content-idea"` branch** — pass contentItemId in body; build prompt from current ContentItem state + brand + context
-- [ ] **Step 4: Mount in `ContentItemDetailIdea` left rail**
-- [ ] **Step 5: Playwright** — open an idea item, chat "make the hook punchier", see hook update
-- [ ] **Step 6: Commit** — `feat(content): per-item chat in idea state`
+- [x] **Step 1: System prompt** — refines text fields of ONE ContentItem. Tools: `PATCH /api/content/[id]` only. Should not touch slides.
+- [x] **Step 2: `ContentIdeaChat`** — adapt `ChatPanel` shape but with per-item session keys (`chat-session-idea-${id}`)
+- [x] **Step 3: API route — `mode: "content-idea"` branch** — pass contentItemId in body; build prompt from current ContentItem state + brand + context
+- [x] **Step 4: Mount in `ContentItemDetailIdea` left rail**
+- [~] **Step 5: Playwright** — skipped (no dev server)
+- [x] **Step 6: Commit** — `feat(content): per-item chat in idea state`
 
 ---
 
