@@ -196,7 +196,7 @@ Authoring tips:
 ## API — Use curl for all operations
 
 ### Create a slide (full structure at once):
-curl -s -X POST http://localhost:3000/api/carousels/${carousel?.id || "{ID}"}/slides \\
+curl -s -X POST http://localhost:3000/api/content/${carousel?.id || "{ID}"}/slides \\
   -H "Content-Type: application/json" \\
   -d '{
     "background": { "kind": "gradient", "angle": 135, "stops": [{ "offset": 0, "color": "#2fd9b0" }, { "offset": 1, "color": "#00c4ee" }] },
@@ -214,34 +214,34 @@ curl -s -X POST http://localhost:3000/api/carousels/${carousel?.id || "{ID}"}/sl
   }'
 
 ### Replace an entire slide:
-curl -s -X PUT http://localhost:3000/api/carousels/${carousel?.id || "{ID}"}/slides/{SLIDE_ID} \\
+curl -s -X PUT http://localhost:3000/api/content/${carousel?.id || "{ID}"}/slides/{SLIDE_ID} \\
   -H "Content-Type: application/json" \\
   -d '{ "background": {...}, "elements": [...] }'
 
 ### Granular endpoints (prefer these for small edits):
 # Add one element to a slide
-curl -s -X POST http://localhost:3000/api/carousels/${carousel?.id || "{ID}"}/slides/{SLIDE_ID}/elements \\
+curl -s -X POST http://localhost:3000/api/content/${carousel?.id || "{ID}"}/slides/{SLIDE_ID}/elements \\
   -H "Content-Type: application/json" \\
   -d '{ "kind": "container", "position": {...}, "size": {...}, "htmlContent": "...", "scssStyles": "..." }'
 
 # Patch one element (fields to change only)
-curl -s -X PATCH http://localhost:3000/api/carousels/${carousel?.id || "{ID}"}/slides/{SLIDE_ID}/elements/{ELEMENT_ID} \\
+curl -s -X PATCH http://localhost:3000/api/content/${carousel?.id || "{ID}"}/slides/{SLIDE_ID}/elements/{ELEMENT_ID} \\
   -H "Content-Type: application/json" \\
   -d '{ "position": { "x": 120, "y": 300 } }'
 
 # Delete an element
-curl -s -X DELETE http://localhost:3000/api/carousels/${carousel?.id || "{ID}"}/slides/{SLIDE_ID}/elements/{ELEMENT_ID}
+curl -s -X DELETE http://localhost:3000/api/content/${carousel?.id || "{ID}"}/slides/{SLIDE_ID}/elements/{ELEMENT_ID}
 
 # Replace background only
-curl -s -X PUT http://localhost:3000/api/carousels/${carousel?.id || "{ID}"}/slides/{SLIDE_ID}/background \\
+curl -s -X PUT http://localhost:3000/api/content/${carousel?.id || "{ID}"}/slides/{SLIDE_ID}/background \\
   -H "Content-Type: application/json" \\
   -d '{ "kind": "solid", "color": "#000000" }'
 
 ### Delete a slide:
-curl -s -X DELETE http://localhost:3000/api/carousels/${carousel?.id || "{ID}"}/slides/{SLIDE_ID}
+curl -s -X DELETE http://localhost:3000/api/content/${carousel?.id || "{ID}"}/slides/{SLIDE_ID}
 
 ### Save caption + hashtags:
-curl -s -X PUT http://localhost:3000/api/carousels/${carousel?.id || "{ID}"}/caption \\
+curl -s -X PUT http://localhost:3000/api/content/${carousel?.id || "{ID}"}/caption \\
   -H "Content-Type: application/json" \\
   -d '{"caption": "Your caption text...", "hashtags": ["tag1", "tag2", "tag3"]}'
 
@@ -251,8 +251,8 @@ curl -s -X POST http://localhost:3000/api/style-presets \\
   -d '{"name": "Style Name", "designRules": "description of visual rules...", "aspectRatio": "${carousel?.aspectRatio || "4:5"}"}'
 
 ### Other endpoints:
-- GET /api/carousels/{id} — get carousel with all slides
-- PUT /api/carousels/{id}/slides — reorder (body: { "slideIds": [...] })
+- GET /api/content/{id} — get content item with all slides
+- PUT /api/content/{id}/slides — reorder (body: { "slideIds": [...] })
 
 ## Slide composition rules (CRITICAL)
 
@@ -301,7 +301,7 @@ When asked to "optimize the hook" or "improve slide 1":
 After creating all slides, proactively offer to generate:
 1. Instagram caption (150-300 chars): hook line, value summary, CTA
 2. 20-30 hashtags: mix of high-reach (500K+), medium (50K-500K), and niche (<50K)
-3. Save via PUT /api/carousels/{id}/caption
+3. Save via PUT /api/content/{id}/caption
 
 ## Behavioral rules
 - BE PROACTIVE: Create first, refine later. Never ask for permission to start creating.

@@ -333,12 +333,12 @@ Each task targets <250 LOC and has a Playwright or curl validation step before m
 - Modify: `src/app/api/chat/route.ts`
 - Modify: `src/lib/chat-system-prompt.ts` (rename + adjust references)
 
-- [ ] **Step 1: Rename `mode: "carousel"` → `mode: "content-generation"` in `/api/chat`**
-- [ ] **Step 2: Keep `"carousel"` as a deprecated alias** that prints a console warning and routes to the new branch (so existing localStorage sessions don't break)
-- [ ] **Step 3: System prompt — replace all `carousel` URL prefixes with `content`** (e.g., `/api/carousels/{ID}/slides` → `/api/content/{ID}/slides`)
-- [ ] **Step 4: Update `ChatPanel` (used by `EditorBody`) to send `mode: "content-generation"`**
-- [ ] **Step 5: Playwright** — open a generated item, talk to chat, confirm slide CRUD works via the new URLs
-- [ ] **Step 6: Commit** — `refactor(chat): mode "carousel" → "content-generation"`
+- [x] **Step 1: Rename `mode: "carousel"` → `mode: "content-generation"` in `/api/chat`**
+- [x] **Step 2: Keep `"carousel"` as a deprecated alias** that prints a console warning and routes to the new branch (so existing localStorage sessions don't break)
+- [x] **Step 3: System prompt — replace all `carousel` URL prefixes with `content`** (e.g., `/api/carousels/{ID}/slides` → `/api/content/{ID}/slides`)
+- [x] **Step 4: Update `ChatPanel` (used by `EditorBody`) to send `mode: "content-generation"`**
+- [~] **Step 5: Playwright** — skipped (no dev server)
+- [x] **Step 6: Commit** — `refactor(chat): mode "carousel" → "content-generation"`
 
 ---
 

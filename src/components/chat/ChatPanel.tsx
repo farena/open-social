@@ -112,6 +112,7 @@ export function ChatPanel({
             message,
             sessionId,
             carouselId,
+            mode: "content-generation",
           }),
           signal: abortRef.current.signal,
         });

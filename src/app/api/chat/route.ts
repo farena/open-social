@@ -31,7 +31,7 @@ export async function POST(request: NextRequest) {
     sessionId?: string;
     carouselId?: string;
     stylePresetId?: string;
-    mode?: "carousel" | "business-context" | "ideation";
+    mode?: "content-generation" | "carousel" | "business-context" | "ideation";
   };
   try {
     body = await request.json();
@@ -62,6 +62,14 @@ export async function POST(request: NextRequest) {
     systemPrompt = buildIdeationSystemPrompt(brand, ctx);
     agentName = "ideation-chat";
   } else {
+    // "content-generation" is the canonical mode.
+    // "carousel" is a deprecated alias kept for backwards compatibility with
+    // existing localStorage sessions — it routes to the same handler.
+    if (mode === "carousel") {
+      console.warn(
+        "[chat] mode 'carousel' is deprecated, use 'content-generation'"
+      );
+    }
     const [brand, businessContext, carousel, stylePreset, assets] = await Promise.all([
       getBrand(),
       getBusinessContext(),
@@ -70,7 +78,7 @@ export async function POST(request: NextRequest) {
       listAssets(),
     ]);
     systemPrompt = buildSystemPrompt(brand, carousel, stylePreset, businessContext, assets);
-    agentName = "carrusel-chat";
+    agentName = "content-generation-chat";
   }
 
   const claudePath = getClaudePath();
