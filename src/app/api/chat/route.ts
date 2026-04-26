@@ -4,6 +4,7 @@ import crossSpawn from "cross-spawn";
 import { getClaudePath, isClaudeAvailable } from "@/lib/claude-path";
 import { buildSystemPrompt } from "@/lib/chat-system-prompt";
 import { buildContextChatSystemPrompt } from "@/lib/context-chat-system-prompt";
+import { buildIdeationSystemPrompt } from "@/lib/ideation-system-prompt";
 import { listAssets } from "@/lib/assets";
 import { getBrand } from "@/lib/brand";
 import { getBusinessContext } from "@/lib/business-context";
@@ -30,7 +31,7 @@ export async function POST(request: NextRequest) {
     sessionId?: string;
     carouselId?: string;
     stylePresetId?: string;
-    mode?: "carousel" | "business-context";
+    mode?: "carousel" | "business-context" | "ideation";
   };
   try {
     body = await request.json();
@@ -56,6 +57,10 @@ export async function POST(request: NextRequest) {
     const ctx = await getBusinessContext();
     systemPrompt = buildContextChatSystemPrompt(ctx);
     agentName = "business-context-chat";
+  } else if (mode === "ideation") {
+    const [brand, ctx] = await Promise.all([getBrand(), getBusinessContext()]);
+    systemPrompt = buildIdeationSystemPrompt(brand, ctx);
+    agentName = "ideation-chat";
   } else {
     const [brand, businessContext, carousel, stylePreset, assets] = await Promise.all([
       getBrand(),

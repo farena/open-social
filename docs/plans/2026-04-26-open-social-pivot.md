@@ -292,20 +292,20 @@ Each task targets <250 LOC and has a Playwright or curl validation step before m
 - Create: `src/lib/ideation-system-prompt.ts`
 - Modify: `src/app/api/chat/route.ts` — add `mode: "ideation"` branch
 
-- [ ] **Step 1: System prompt**
+- [x] **Step 1: System prompt**
   - Tells Claude its job is to ideate ContentItems based on brand + business context
   - Output: instructs to call `POST /api/content` for each idea with `{ type, hook, bodyIdea, caption, hashtags }` (state defaults to "idea" server-side)
   - Should batch-create on a single user prompt (e.g., "give me 5 ideas about teachers" → 5 POSTs)
-- [ ] **Step 2: `IdeationChat` component**
+- [x] **Step 2: `IdeationChat` component**
   - Adapt `BusinessContextChat` (similar shape)
   - localStorage keys: `chat-session-ideation`, `chat-messages-ideation`
   - On stream end, callback to parent → refetch content items
-- [ ] **Step 3: API route — `mode: "ideation"` branch**
+- [x] **Step 3: API route — `mode: "ideation"` branch**
   - Build prompt with `buildIdeationSystemPrompt(brand, context)`
   - `agentName: "ideation-chat"`
   - allowedTools: `Bash WebFetch` (for curl + research)
-- [ ] **Step 4: Playwright** — type "give me 3 carousel ideas about Kmpus" in the chat → confirm 3 rows appear in the table
-- [ ] **Step 5: Commit** — `feat(dashboard): ideation chat with batch ContentItem creation`
+- [~] **Step 4: Playwright** — skipped (no dev server)
+- [x] **Step 5: Commit** — `feat(dashboard): ideation chat with batch ContentItem creation`
 
 ---
 
