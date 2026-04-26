@@ -1,6 +1,6 @@
 <div align="center">
 
-# Open Carrusel
+# Open Social
 
 ### Chat with Claude. Design Instagram carousels. Export pixel-perfect PNGs.
 
@@ -22,7 +22,7 @@
 
 ## Table of contents
 
-- [Why Open Carrusel](#-why-open-carrusel)
+- [Why Open Social](#-why-open-social)
 - [See it in action](#-see-it-in-action)
 - [Quickstart (60 seconds)](#-quickstart-60-seconds)
 - [What you can do](#-what-you-can-do)
@@ -41,7 +41,7 @@
 
 ---
 
-## ✨ Why Open Carrusel
+## ✨ Why Open Social
 
 Designing Instagram carousels eats hours. You either:
 
@@ -49,7 +49,7 @@ Designing Instagram carousels eats hours. You either:
 - Wrestle Canva templates that everyone else also uses
 - Hand-craft slides in Figma and lose your weekend
 
-**Open Carrusel takes a different bet.** You chat with Claude — the same model many designers already trust — and it generates real HTML/CSS slides that get screenshotted to PNGs at exact Instagram dimensions. Slides are unique, on-brand, and pixel-perfect. Everything runs on your laptop. Nothing is sent to a cloud you don't control.
+**Open Social takes a different bet.** You chat with Claude — the same model many designers already trust — and it generates real HTML/CSS slides that get screenshotted to PNGs at exact Instagram dimensions. Slides are unique, on-brand, and pixel-perfect. Everything runs on your laptop. Nothing is sent to a cloud you don't control.
 
 It's open source under MIT. Fork it, tweak the system prompt, ship your own variant. No accounts. No subscriptions. No vendor lock-in.
 
@@ -382,11 +382,11 @@ Good first contributions: roadmap items above, more brand templates, accessibili
 
 ## 👋 About the maker
 
-Open Carrusel is built and maintained by **[tododeia](https://www.tododeia.com)** — a content + AI lab building tools for creators who want leverage without lock-in.
+Open Social is built and maintained by **[tododeia](https://www.tododeia.com)** — a content + AI lab building tools for creators who want leverage without lock-in.
 
 Founder: **Enrique Rocha** ([@soyenriquerocha](https://www.instagram.com/soyenriquerocha)) — Tijuanense, content creator, builds AI tools so creators don't fall behind. Also behind [@tododeia](https://www.instagram.com/tododeia) and [@metara.ai](https://www.instagram.com/metara.ai).
 
-If Open Carrusel saves you time, the best support is:
+If Open Social saves you time, the best support is:
 
 - ⭐ **Star this repo** to help others find it
 - 🐛 **Open an issue** when something breaks (or send a PR)

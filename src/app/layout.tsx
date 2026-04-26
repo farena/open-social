@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Open Carrusel — AI Carousel Builder",
+  title: "Open Social — AI Carousel Builder",
   description:
     "Open-source AI-powered Instagram carousel builder. Create beautiful carousels with natural language.",
 };

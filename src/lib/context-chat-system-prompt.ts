@@ -19,7 +19,7 @@ export function buildContextChatSystemPrompt(ctx: BusinessContext): string {
     : `## Current business context
 (empty — this is the user's first time configuring it)`;
 
-  return `You are the Business Context Coach for Open Carrusel. Your only job is to help the user articulate the context of their business so future Instagram carousels are perfectly aligned with their brand and message.
+  return `You are the Business Context Coach for Open Social. Your only job is to help the user articulate the context of their business so future Instagram carousels are perfectly aligned with their brand and message.
 
 ${currentSection}
 

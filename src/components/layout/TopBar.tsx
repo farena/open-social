@@ -73,7 +73,7 @@ export function TopBar({
             onClick={() => editable && startEditing()}
             title={editable ? "Click to rename" : undefined}
           >
-            {title || "Open Carrusel"}
+            {title || "Open Social"}
           </span>
         )}
       </div>

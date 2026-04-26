@@ -1,10 +1,10 @@
 ---
-description: Bootstrap Open Carrusel — run setup, launch dev server, open browser.
+description: Bootstrap Open Social — run setup, launch dev server, open browser.
 argument-hint: [port]
 allowed-tools: Bash(node *), Bash(uname *), Bash(test *), Bash(lsof *), Bash(kill *), Bash(curl *), Bash(open *), Bash(xdg-open *), Bash(cmd.exe *), Bash(npm *), Bash(tail *), AskUserQuestion
 ---
 
-You are bootstrapping Open Carrusel for the user. Be terse — short status updates only, no preamble.
+You are bootstrapping Open Social for the user. Be terse — short status updates only, no preamble.
 
 ## Snapshot (these run before you see this prompt)
 
@@ -43,7 +43,7 @@ User-supplied port (optional): $ARGUMENTS
    - Windows / MINGW / CYGWIN → `cmd.exe /c start http://localhost:<port>`
 
 8. **Report ready** in two lines (no more):
-   > Open Carrusel is running at http://localhost:`<port>`.
+   > Open Social is running at http://localhost:`<port>`.
    > Logs: `tail -f /tmp/open-carrusel-dev.log` • Stop with `/stop`
 
 Idempotency note: re-running `/start` on a healthy install is fast — the setup script skips already-installed deps and already-seeded data, and the port check skips the launch step if the server is already up.

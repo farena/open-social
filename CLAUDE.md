@@ -1,4 +1,4 @@
-# Open Carrusel
+# Open Social
 
 AI-powered Instagram carousel builder. Next.js 16 + React 19 + TypeScript + Tailwind v4.
 
