@@ -9,21 +9,21 @@ type Scope = "carousel" | "library";
 
 interface AssetsProps {
   scope: Scope;
-  carouselId?: string;       // required when scope === "carousel"
+  contentItemId?: string; // required when scope === "carousel"
   onAssetsChanged?: () => void;
 }
 
-export function Assets({ scope, carouselId, onAssetsChanged }: AssetsProps) {
+export function Assets({ scope, contentItemId, onAssetsChanged }: AssetsProps) {
   const [assets, setAssets] = useState<Asset[]>([]);
   const [managerOpen, setManagerOpen] = useState(false);
 
   const baseUrl =
     scope === "library"
       ? "/api/assets"
-      : `/api/content/${carouselId}/assets`; // TODO: rename prop carouselId → contentItemId
+      : `/api/content/${contentItemId}/assets`;
 
   const refresh = useCallback(async () => {
-    if (scope === "carousel" && !carouselId) return;
+    if (scope === "carousel" && !contentItemId) return;
     try {
       const res = await fetch(baseUrl);
       if (!res.ok) return;
@@ -32,7 +32,7 @@ export function Assets({ scope, carouselId, onAssetsChanged }: AssetsProps) {
     } catch {
       // ignore
     }
-  }, [baseUrl, scope, carouselId]);
+  }, [baseUrl, scope, contentItemId]);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- setAssets runs after await, not in commit phase

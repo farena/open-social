@@ -15,7 +15,7 @@ interface Message {
 }
 
 interface ChatPanelProps {
-  carouselId: string;
+  contentItemId: string;
   referenceImages?: ReferenceImage[];
   claudeAvailable: boolean;
   onStreamStart?: () => void;
@@ -24,7 +24,7 @@ interface ChatPanelProps {
 }
 
 export function ChatPanel({
-  carouselId,
+  contentItemId,
   claudeAvailable,
   referenceImages = [],
   onStreamStart,
@@ -40,34 +40,34 @@ export function ChatPanel({
 
   // Load session ID and chat history from localStorage
   useEffect(() => {
-    const storedSession = localStorage.getItem(`chat-session-${carouselId}`);
+    const storedSession = localStorage.getItem(`chat-session-${contentItemId}`);
     if (storedSession) setSessionId(storedSession);
     try {
-      const storedMessages = localStorage.getItem(`chat-messages-${carouselId}`);
+      const storedMessages = localStorage.getItem(`chat-messages-${contentItemId}`);
       if (storedMessages) setMessages(JSON.parse(storedMessages));
     } catch {
       // ignore corrupted data
     }
-  }, [carouselId]);
+  }, [contentItemId]);
 
   // Persist messages to localStorage
   const persistMessages = useCallback(
     (msgs: Message[]) => {
       try {
-        localStorage.setItem(`chat-messages-${carouselId}`, JSON.stringify(msgs));
+        localStorage.setItem(`chat-messages-${contentItemId}`, JSON.stringify(msgs));
       } catch {
         // ignore quota errors
       }
     },
-    [carouselId]
+    [contentItemId]
   );
 
   const handleClearChat = useCallback(() => {
     setMessages([]);
     setSessionId(null);
-    localStorage.removeItem(`chat-messages-${carouselId}`);
-    localStorage.removeItem(`chat-session-${carouselId}`);
-  }, [carouselId]);
+    localStorage.removeItem(`chat-messages-${contentItemId}`);
+    localStorage.removeItem(`chat-session-${contentItemId}`);
+  }, [contentItemId]);
 
   const handleStopGenerating = useCallback(() => {
     abortRef.current?.abort();
@@ -111,7 +111,7 @@ export function ChatPanel({
           body: JSON.stringify({
             message,
             sessionId,
-            carouselId,
+            contentItemId,
             mode: "content-generation",
           }),
           signal: abortRef.current.signal,
@@ -176,7 +176,7 @@ export function ChatPanel({
                 if (data.sessionId) {
                   setSessionId(data.sessionId);
                   localStorage.setItem(
-                    `chat-session-${carouselId}`,
+                    `chat-session-${contentItemId}`,
                     data.sessionId
                   );
                 }
@@ -196,7 +196,7 @@ export function ChatPanel({
                 if (data.sessionId) {
                   setSessionId(data.sessionId);
                   localStorage.setItem(
-                    `chat-session-${carouselId}`,
+                    `chat-session-${contentItemId}`,
                     data.sessionId
                   );
                 }
@@ -227,7 +227,7 @@ export function ChatPanel({
         onStreamEnd?.();
       }
     },
-    [isStreaming, sessionId, carouselId, onStreamStart, onStreamEnd, persistMessages]
+    [isStreaming, sessionId, contentItemId, onStreamStart, onStreamEnd, persistMessages]
   );
 
   if (!claudeAvailable) {
@@ -236,7 +236,7 @@ export function ChatPanel({
         <Plug className="h-10 w-10 text-muted-foreground mb-3" />
         <h3 className="font-semibold text-sm mb-1">Connect Claude CLI</h3>
         <p className="text-xs text-muted-foreground max-w-[200px]">
-          Install Claude CLI to enable AI-powered carousel creation.{" "}
+          Install Claude CLI to enable AI-powered content creation.{" "}
           <a
             href="https://docs.anthropic.com/en/docs/claude-code"
             target="_blank"
@@ -256,7 +256,7 @@ export function ChatPanel({
         <div>
           <h2 className="text-sm font-semibold">AI Assistant</h2>
           <p className="text-xs text-muted-foreground">
-            Describe the carousel you want to create
+            Describe the content you want to create
           </p>
         </div>
         {messages.length > 0 && (
@@ -270,12 +270,12 @@ export function ChatPanel({
       </div>
 
       <ReferenceImages
-        carouselId={carouselId}
+        contentItemId={contentItemId}
         images={referenceImages}
         onImagesChange={() => onStreamEnd?.()}
       />
 
-      <Assets scope="carousel" carouselId={carouselId} />
+      <Assets scope="carousel" contentItemId={contentItemId} />
 
       <Assets scope="library" />
 
@@ -284,7 +284,7 @@ export function ChatPanel({
           <div className="p-6 text-center text-muted-foreground">
             <p className="text-sm mb-1">No messages yet</p>
             <p className="text-xs">
-              Tell me what carousel you&apos;d like to create
+              Tell me what content you&apos;d like to create
             </p>
           </div>
         )}

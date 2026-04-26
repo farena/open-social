@@ -252,7 +252,7 @@ export default function ContentItemPage({ params }: PageProps) {
         await fetch("/api/templates", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ carouselId: id }),
+          body: JSON.stringify({ contentItemId: id }),
         });
       }}
       onDeleteCarousel={handleDeleteItem}
@@ -318,7 +318,7 @@ export default function ContentItemPage({ params }: PageProps) {
         {chatOpen && (
           <div className="oc-fade w-80 border-r border-border shrink-0 flex flex-col bg-surface">
             <ChatPanel
-              carouselId={id}
+              contentItemId={id}
               claudeAvailable={claudeAvailable}
               referenceImages={item.referenceImages ?? []}
               onStreamStart={handleStreamStart}

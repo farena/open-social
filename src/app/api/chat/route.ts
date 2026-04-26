@@ -30,7 +30,6 @@ export async function POST(request: NextRequest) {
   let body: {
     message?: string;
     sessionId?: string;
-    carouselId?: string;
     contentItemId?: string;
     stylePresetId?: string;
     mode?: "content-generation" | "carousel" | "business-context" | "ideation" | "content-idea";
@@ -41,7 +40,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
-  const { message, sessionId, carouselId, contentItemId, stylePresetId, mode } = body;
+  const { message, sessionId, contentItemId, stylePresetId, mode } = body;
 
   if (
     !message ||
@@ -92,15 +91,14 @@ export async function POST(request: NextRequest) {
         "[chat] mode 'carousel' is deprecated, use 'content-generation'"
       );
     }
-    const resolvedItemId = contentItemId || carouselId;
-    const [brand, businessContext, carousel, stylePreset, assets] = await Promise.all([
+    const [brand, businessContext, contentItem, stylePreset, assets] = await Promise.all([
       getBrand(),
       getBusinessContext(),
-      resolvedItemId ? getContentItem(resolvedItemId) : Promise.resolve(null),
+      contentItemId ? getContentItem(contentItemId) : Promise.resolve(null),
       stylePresetId ? getPreset(stylePresetId) : Promise.resolve(null),
       listAssets(),
     ]);
-    systemPrompt = buildSystemPrompt(brand, carousel, stylePreset, businessContext, assets);
+    systemPrompt = buildSystemPrompt(brand, contentItem, stylePreset, businessContext, assets);
     agentName = "content-generation-chat";
   }
 

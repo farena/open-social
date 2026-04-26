@@ -6,13 +6,13 @@ import { Button } from "@/components/ui/button";
 import type { ReferenceImage } from "@/types/carousel";
 
 interface ReferenceImagesProps {
-  carouselId: string;
+  contentItemId: string;
   images: ReferenceImage[];
   onImagesChange: () => void;
 }
 
 export function ReferenceImages({
-  carouselId,
+  contentItemId,
   images,
   onImagesChange,
 }: ReferenceImagesProps) {
@@ -36,7 +36,7 @@ export function ReferenceImages({
 
       {managerOpen && (
         <ReferenceImagesModal
-          carouselId={carouselId}
+          contentItemId={contentItemId}
           images={images}
           onClose={() => setManagerOpen(false)}
           onChanged={onImagesChange}
@@ -47,14 +47,14 @@ export function ReferenceImages({
 }
 
 interface ReferenceImagesModalProps {
-  carouselId: string;
+  contentItemId: string;
   images: ReferenceImage[];
   onClose: () => void;
   onChanged: () => void;
 }
 
 function ReferenceImagesModal({
-  carouselId,
+  contentItemId,
   images,
   onClose,
   onChanged,
@@ -75,7 +75,7 @@ function ReferenceImagesModal({
         if (!uploadRes.ok) return;
         const uploadData = await uploadRes.json();
 
-        await fetch(`/api/content/${carouselId}/references`, {
+        await fetch(`/api/content/${contentItemId}/references`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -91,18 +91,18 @@ function ReferenceImagesModal({
         setUploading(false);
       }
     },
-    [carouselId, onChanged]
+    [contentItemId, onChanged]
   );
 
   const handleRemove = useCallback(
     async (imageId: string) => {
       await fetch(
-        `/api/content/${carouselId}/references?imageId=${imageId}`,
+        `/api/content/${contentItemId}/references?imageId=${imageId}`,
         { method: "DELETE" }
       );
       onChanged();
     },
-    [carouselId, onChanged]
+    [contentItemId, onChanged]
   );
 
   const handleDrop = useCallback(
