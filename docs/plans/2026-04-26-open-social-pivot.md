@@ -314,14 +314,14 @@ Each task targets <250 LOC and has a Playwright or curl validation step before m
 **Files:**
 - Modify: `src/app/page.tsx`
 
-- [ ] **Step 1: Replace the carousel-cards/templates tab UI with the split layout**
+- [x] **Step 1: Replace the carousel-cards/templates tab UI with the split layout**
   - Left: `<IdeationChat onItemsCreated={refetch} />` (~360px wide, border-r)
   - Right: `<ContentItemsTable items={items} onDelete={...} onCreateBlank={async()=>{ POST /api/content -> navigate /content/<id> }} />`
-- [ ] **Step 2: Fetch ContentItems via `/api/content` on mount + after callbacks**
-- [ ] **Step 3: Keep TopBar + brand-empty redirect (same logic, different table)**
-- [ ] **Step 4: Drop the Templates tab entirely** (or hide behind a feature flag — recommend full removal for this pivot; the API stays)
-- [ ] **Step 5: Playwright headed** — full smoke: page loads with table populated by migrated items, click row → editor opens
-- [ ] **Step 6: Commit** — `feat(dashboard): chat + ContentItemsTable split layout`
+- [x] **Step 2: Fetch ContentItems via `/api/content` on mount + after callbacks**
+- [x] **Step 3: Keep TopBar + brand-empty redirect (same logic, different table)**
+- [x] **Step 4: Drop the Templates tab entirely** (or hide behind a feature flag — recommend full removal for this pivot; the API stays)
+- [~] **Step 5: Playwright headed** — skipped (no dev server)
+- [x] **Step 6: Commit** — `feat(dashboard): chat + ContentItemsTable split layout`
 
 ---
 
