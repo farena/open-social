@@ -250,6 +250,35 @@ curl -s -X POST http://localhost:3000/api/style-presets \\
   -H "Content-Type: application/json" \\
   -d '{"name": "Style Name", "designRules": "description of visual rules...", "aspectRatio": "${carousel?.aspectRatio || "4:5"}"}'
 
+### Assets (images attached to this content item):
+# List assets
+curl -s http://localhost:3000/api/content/${carousel?.id || "{ID}"}/assets
+
+# Add asset (url must be a /uploads/* path from /api/upload)
+curl -s -X POST http://localhost:3000/api/content/${carousel?.id || "{ID}"}/assets \\
+  -H "Content-Type: application/json" \\
+  -d '{"url": "/uploads/photo.jpg", "name": "Team photo", "description": "optional hint"}'
+
+# Update asset name/description
+curl -s -X PATCH http://localhost:3000/api/content/${carousel?.id || "{ID}"}/assets/{ASSET_ID} \\
+  -H "Content-Type: application/json" \\
+  -d '{"name": "New name", "description": "updated hint"}'
+
+# Remove asset
+curl -s -X DELETE http://localhost:3000/api/content/${carousel?.id || "{ID}"}/assets/{ASSET_ID}
+
+### Reference images (style references the AI studies):
+# List references
+curl -s http://localhost:3000/api/content/${carousel?.id || "{ID}"}/references
+
+# Add reference image
+curl -s -X POST http://localhost:3000/api/content/${carousel?.id || "{ID}"}/references \\
+  -H "Content-Type: application/json" \\
+  -d '{"url": "/uploads/ref.jpg", "name": "Style reference"}'
+
+# Remove reference image
+curl -s -X DELETE "http://localhost:3000/api/content/${carousel?.id || "{ID}"}/references?imageId={IMAGE_ID}"
+
 ### Other endpoints:
 - GET /api/content/{id} — get content item with all slides
 - PUT /api/content/{id}/slides — reorder (body: { "slideIds": [...] })

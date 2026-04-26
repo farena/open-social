@@ -75,7 +75,7 @@ function ReferenceImagesModal({
         if (!uploadRes.ok) return;
         const uploadData = await uploadRes.json();
 
-        await fetch(`/api/carousels/${carouselId}/references`, {
+        await fetch(`/api/content/${carouselId}/references`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -97,7 +97,7 @@ function ReferenceImagesModal({
   const handleRemove = useCallback(
     async (imageId: string) => {
       await fetch(
-        `/api/carousels/${carouselId}/references?imageId=${imageId}`,
+        `/api/content/${carouselId}/references?imageId=${imageId}`,
         { method: "DELETE" }
       );
       onChanged();

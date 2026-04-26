@@ -20,7 +20,7 @@ export function Assets({ scope, carouselId, onAssetsChanged }: AssetsProps) {
   const baseUrl =
     scope === "library"
       ? "/api/assets"
-      : `/api/carousels/${carouselId}/assets`;
+      : `/api/content/${carouselId}/assets`; // TODO: rename prop carouselId → contentItemId
 
   const refresh = useCallback(async () => {
     if (scope === "carousel" && !carouselId) return;

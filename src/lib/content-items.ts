@@ -2,8 +2,9 @@ import { readDataSafe, writeData } from "./data";
 import { generateId, now } from "./utils";
 import type { ContentItem } from "@/types/content-item";
 import { DEFAULT_ASPECT_RATIO_FOR_TYPE, MAX_SLIDES } from "@/types/content-item";
-import type { Slide } from "@/types/carousel";
+import type { Slide, ReferenceImage } from "@/types/carousel";
 import { MAX_VERSIONS } from "@/types/carousel";
+import type { Asset } from "@/types/asset";
 import type { BackgroundElement, SlideElement, SlideSnapshot } from "@/types/slide-model";
 import {
   newContentItemInputSchema,
@@ -242,4 +243,93 @@ export async function undoSlide(
   item.updatedAt = now();
   await save(data);
   return item;
+}
+
+// --- Asset operations ---
+
+export async function addContentItemAsset(
+  itemId: string,
+  asset: Asset
+): Promise<ContentItem | null> {
+  const data = await load();
+  const item = data.contentItems.find((c) => c.id === itemId);
+  if (!item) return null;
+
+  if (!item.assets) item.assets = [];
+  item.assets.unshift(asset);
+  item.updatedAt = now();
+  await save(data);
+  return item;
+}
+
+export async function updateContentItemAsset(
+  itemId: string,
+  assetId: string,
+  updates: Partial<Pick<Asset, "name" | "description">>
+): Promise<Asset | null> {
+  const data = await load();
+  const item = data.contentItems.find((c) => c.id === itemId);
+  if (!item || !item.assets) return null;
+  const asset = item.assets.find((a) => a.id === assetId);
+  if (!asset) return null;
+
+  if (updates.name !== undefined) asset.name = updates.name.trim() || asset.name;
+  if (updates.description !== undefined) {
+    const trimmed = updates.description.trim();
+    asset.description = trimmed.length > 0 ? trimmed : undefined;
+  }
+  item.updatedAt = now();
+  await save(data);
+  return asset;
+}
+
+export async function removeContentItemAsset(
+  itemId: string,
+  assetId: string
+): Promise<boolean> {
+  const data = await load();
+  const item = data.contentItems.find((c) => c.id === itemId);
+  if (!item || !item.assets) return false;
+
+  const idx = item.assets.findIndex((a) => a.id === assetId);
+  if (idx === -1) return false;
+
+  item.assets.splice(idx, 1);
+  item.updatedAt = now();
+  await save(data);
+  return true;
+}
+
+// --- Reference image operations ---
+
+export async function addReferenceImage(
+  itemId: string,
+  image: ReferenceImage
+): Promise<ContentItem | null> {
+  const data = await load();
+  const item = data.contentItems.find((c) => c.id === itemId);
+  if (!item) return null;
+
+  if (!item.referenceImages) item.referenceImages = [];
+  item.referenceImages.push(image);
+  item.updatedAt = now();
+  await save(data);
+  return item;
+}
+
+export async function removeReferenceImage(
+  itemId: string,
+  imageId: string
+): Promise<boolean> {
+  const data = await load();
+  const item = data.contentItems.find((c) => c.id === itemId);
+  if (!item || !item.referenceImages) return false;
+
+  const idx = item.referenceImages.findIndex((img) => img.id === imageId);
+  if (idx === -1) return false;
+
+  item.referenceImages.splice(idx, 1);
+  item.updatedAt = now();
+  await save(data);
+  return true;
 }
