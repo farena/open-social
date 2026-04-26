@@ -6,18 +6,28 @@ import { BusinessContextChat } from "@/components/business-context/BusinessConte
 import { BusinessContextView } from "@/components/business-context/BusinessContextView";
 import type { BusinessContext } from "@/types/business-context";
 import { DEFAULT_BUSINESS_CONTEXT } from "@/types/business-context";
+import type { BrandConfig } from "@/types/brand";
+import { DEFAULT_BRAND } from "@/types/brand";
 
 export default function BusinessContextPage() {
   const [context, setContext] = useState<BusinessContext>(DEFAULT_BUSINESS_CONTEXT);
+  const [brand, setBrand] = useState<BrandConfig>(DEFAULT_BRAND);
   const [loading, setLoading] = useState(true);
   const [claudeAvailable, setClaudeAvailable] = useState(true);
 
-  const fetchContext = useCallback(async () => {
+  const fetchAll = useCallback(async () => {
     try {
-      const res = await fetch("/api/business-context", { cache: "no-store" });
-      if (res.ok) {
-        const data: BusinessContext = await res.json();
+      const [ctxRes, brandRes] = await Promise.all([
+        fetch("/api/business-context", { cache: "no-store" }),
+        fetch("/api/brand", { cache: "no-store" }),
+      ]);
+      if (ctxRes.ok) {
+        const data: BusinessContext = await ctxRes.json();
         setContext(data);
+      }
+      if (brandRes.ok) {
+        const data: BrandConfig = await brandRes.json();
+        setBrand(data);
       }
     } finally {
       setLoading(false);
@@ -25,14 +35,14 @@ export default function BusinessContextPage() {
   }, []);
 
   useEffect(() => {
-    fetchContext();
+    fetchAll();
     fetch("/api/chat/check")
       .then((r) => r.json())
       .then((data: { available?: boolean }) => {
         if (data.available === false) setClaudeAvailable(false);
       })
       .catch(() => {});
-  }, [fetchContext]);
+  }, [fetchAll]);
 
   return (
     <div className="h-full flex flex-col">
@@ -42,7 +52,7 @@ export default function BusinessContextPage() {
         <div className="w-96 border-r border-border shrink-0 flex flex-col bg-surface">
           <BusinessContextChat
             claudeAvailable={claudeAvailable}
-            onContextUpdated={fetchContext}
+            onContextUpdated={fetchAll}
           />
         </div>
 
@@ -54,8 +64,10 @@ export default function BusinessContextPage() {
           ) : (
             <BusinessContextView
               context={context}
-              onSaved={setContext}
-              onReload={fetchContext}
+              brand={brand}
+              onContextSaved={setContext}
+              onBrandSaved={setBrand}
+              onReload={fetchAll}
             />
           )}
         </div>

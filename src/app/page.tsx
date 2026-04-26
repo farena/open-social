@@ -8,18 +8,14 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { CreateCarouselDialog } from "@/components/ui/create-carousel-dialog";
-import { BrandSetup } from "@/components/brand/BrandSetup";
 import { SlideRenderer } from "@/components/editor/SlideRenderer";
 import { TemplateGallery } from "@/components/templates/TemplateGallery";
 import type { Carousel } from "@/types/carousel";
-import type { BrandConfig } from "@/types/brand";
 
 export default function DashboardPage() {
   const router = useRouter();
   const [carousels, setCarousels] = useState<Carousel[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showBrandSetup, setShowBrandSetup] = useState(false);
-  const [brand, setBrand] = useState<BrandConfig | null>(null);
 
   useEffect(() => {
     Promise.all([
@@ -27,15 +23,17 @@ export default function DashboardPage() {
       fetch("/api/brand").then((r) => r.json()),
     ])
       .then(([carouselData, brandData]) => {
-        setCarousels(carouselData.carousels || []);
-        setBrand(brandData);
-        if (!brandData.name || brandData.name.trim() === "") {
-          setShowBrandSetup(true);
+        // First-run onboarding: if no brand is set yet, send the user to the
+        // business-context page where brand + context are configured together.
+        if (!brandData?.name || brandData.name.trim() === "") {
+          router.replace("/business-context");
+          return;
         }
+        setCarousels(carouselData.carousels || []);
         setLoading(false);
       })
       .catch(() => setLoading(false));
-  }, []);
+  }, [router]);
 
   const [confirmState, setConfirmState] = useState<{
     open: boolean;
@@ -79,7 +77,7 @@ export default function DashboardPage() {
 
   return (
     <div className="h-full flex flex-col">
-      <TopBar onSettingsClick={() => setShowBrandSetup(true)} />
+      <TopBar />
 
       <ConfirmDialog
         open={confirmState.open}
@@ -95,18 +93,6 @@ export default function DashboardPage() {
         open={showCreateDialog}
         onOpenChange={setShowCreateDialog}
         onCreate={handleCreate}
-      />
-
-      <BrandSetup
-        open={showBrandSetup}
-        onComplete={() => {
-          setShowBrandSetup(false);
-          fetch("/api/brand")
-            .then((r) => r.json())
-            .then((data) => setBrand(data))
-            .catch(() => {});
-        }}
-        initialBrand={brand || undefined}
       />
 
       <main className="flex-1 overflow-y-auto">

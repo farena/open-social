@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
-import { ArrowLeft, Settings, Layers, BookOpen } from "lucide-react";
+import { ArrowLeft, Layers, BookOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface TopBarProps {
@@ -10,7 +10,6 @@ interface TopBarProps {
   showBack?: boolean;
   editable?: boolean;
   onTitleChange?: (newTitle: string) => void;
-  onSettingsClick?: () => void;
 }
 
 export function TopBar({
@@ -18,7 +17,6 @@ export function TopBar({
   showBack,
   editable,
   onTitleChange,
-  onSettingsClick,
 }: TopBarProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [editValue, setEditValue] = useState("");
@@ -90,16 +88,6 @@ export function TopBar({
           <BookOpen className="h-4 w-4" />
         </Button>
       </Link>
-      {onSettingsClick && (
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={onSettingsClick}
-          aria-label="Settings"
-        >
-          <Settings className="h-4 w-4" />
-        </Button>
-      )}
     </header>
   );
 }
