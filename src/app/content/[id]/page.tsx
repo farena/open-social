@@ -83,14 +83,23 @@ export default function ContentItemPage({ params }: PageProps) {
     load();
   }, [fetchItem]);
 
-  // Poll while generating — Task 5.2 will refine this
+  // Poll every 800ms while state === "generating"; stop when state flips to "generated".
   useEffect(() => {
-    if (!isGenerating) return;
+    if (!item || item.state !== "generating") return;
     const interval = setInterval(() => {
       fetchItem();
-    }, 500);
+    }, 800);
     return () => clearInterval(interval);
-  }, [isGenerating, fetchItem]);
+  }, [item?.state, fetchItem]);
+
+  // Refetch on window focus — handles "user navigated away mid-generation" edge case.
+  useEffect(() => {
+    const onFocus = () => {
+      fetchItem();
+    };
+    window.addEventListener("focus", onFocus);
+    return () => window.removeEventListener("focus", onFocus);
+  }, [fetchItem]);
 
   const handleAspectChange = async (ratio: AspectRatio) => {
     if (!item) return;

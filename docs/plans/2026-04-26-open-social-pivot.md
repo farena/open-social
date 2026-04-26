@@ -26,19 +26,19 @@ Each task targets <250 LOC and has a Playwright or curl validation step before m
 - Create: `src/types/content-item.ts`
 - Create: `src/lib/content-item-schema.ts`
 
-- [ ] **Step 1: Define types**
+- [x] **Step 1: Define types**
   - `ContentItemType = "post" | "story" | "carousel"`
   - `ContentItemState = "idea" | "generating" | "generated"`
   - `ContentItem` interface with: `id`, `type`, `state`, `hook`, `bodyIdea`, `caption`, `hashtags: string[]`, `notes?`, `aspectRatio: "1:1" | "9:16" | "4:5"`, `slides: Slide[]`, `chatSessionId?`, `referenceImages?`, `assets?`, `tags?`, `createdAt`, `updatedAt`, `generatedAt?`
   - Re-export `Slide` from `@/types/carousel` (slide model is unchanged — only the parent entity changes)
-- [ ] **Step 2: Build zod schema mirroring the type**
+- [x] **Step 2: Build zod schema mirroring the type**
   - `contentItemSchema`: discriminate on `state` only when needed; otherwise just describe the union
   - `contentItemPatchSchema`: all fields partial except `id`
   - `newContentItemInputSchema`: hook+type required; everything else optional; defaults applied server-side
-- [ ] **Step 3: Compile-time check**
+- [x] **Step 3: Compile-time check**
   - Add `z.infer<typeof contentItemSchema>` and assert it equals the manual type via a helper file or just inline in tests
-- [ ] **Step 4: Validate with `npx tsc --noEmit -p .`**
-- [ ] **Step 5: Commit** — `feat(types): add ContentItem model + schema`
+- [x] **Step 4: Validate with `npx tsc --noEmit -p .`**
+- [x] **Step 5: Commit** — `feat(types): add ContentItem model + schema`
 
 ---
 
@@ -47,7 +47,7 @@ Each task targets <250 LOC and has a Playwright or curl validation step before m
 **Files:**
 - Create: `src/lib/content-items.ts`
 
-- [ ] **Step 1: Implement using existing `data.ts` (`readData`/`writeData`) + `async-mutex` pattern from `carousels.ts`**
+- [x] **Step 1: Implement using existing `data.ts` (`readData`/`writeData`) + `async-mutex` pattern from `carousels.ts`**
   - `listContentItems(): Promise<ContentItem[]>`
   - `getContentItem(id): Promise<ContentItem | null>`
   - `createContentItem(input): Promise<ContentItem>` — validates, fills defaults (state="idea", aspectRatio per type, empty arrays, timestamps)
@@ -55,12 +55,12 @@ Each task targets <250 LOC and has a Playwright or curl validation step before m
   - `deleteContentItem(id): Promise<boolean>`
   - `appendSlide(id, slide): Promise<ContentItem | null>` — pushes to `slides[]` (append-only critical for concurrency rule)
   - `updateSlide(id, slideId, patch)`, `deleteSlide(id, slideId)`, `reorderSlides(id, slideIds[])`, `undoSlide(id, slideId)` — same shape as existing `carousels.ts`
-- [ ] **Step 2: File path constant — `CONTENT_ITEMS_FILE = "content-items.json"`**
-- [ ] **Step 3: Mirror `carousels.ts` mutex strategy** (one mutex per file, atomic write via tmp+rename)
-- [ ] **Step 4: Quick smoke via Node REPL**
+- [x] **Step 2: File path constant — `CONTENT_ITEMS_FILE = "content-items.json"`**
+- [x] **Step 3: Mirror `carousels.ts` mutex strategy** (one mutex per file, atomic write via tmp+rename)
+- [x] **Step 4: Quick smoke via Node REPL**
   - `node -e "import('./src/lib/content-items.ts').then(m => m.listContentItems()).then(console.log)"`
   - Should return `[]` (file doesn't exist yet → returns default)
-- [ ] **Step 5: Commit** — `feat(lib): ContentItem CRUD with file storage + mutex`
+- [x] **Step 5: Commit** — `feat(lib): ContentItem CRUD with file storage + mutex`
 
 ---
 
@@ -69,20 +69,20 @@ Each task targets <250 LOC and has a Playwright or curl validation step before m
 **Files:**
 - Create: `scripts/migrate-to-content-items.mjs`
 
-- [ ] **Step 1: Read `data/carousels.json`, backup to `data/carousels.json.pre-open-social-pivot.bak`**
-- [ ] **Step 2: For each carousel, build ContentItem:**
+- [x] **Step 1: Read `data/carousels.json`, backup to `data/carousels.json.pre-open-social-pivot.bak`**
+- [x] **Step 2: For each carousel, build ContentItem:**
   - `type: "carousel"`, `state: "generated"`
   - `hook`: extract first text from first slide's `htmlContent`. Strip tags via regex `/<[^>]+>/g`, collapse whitespace, take first 80 chars. Fallback: `""`.
   - `bodyIdea`: `notes ?? ""`
   - `caption`/`hashtags`/`aspectRatio`/`slides`/`chatSessionId`/`referenceImages`/`assets`/`tags`: heredados (or default empty)
   - `generatedAt`: `createdAt`
   - `createdAt`, `updatedAt`: heredados
-- [ ] **Step 3: Write to `data/content-items.json`**
-- [ ] **Step 4: Print summary** — `migrated N items, skipped M`
-- [ ] **Step 5: Run script + verify**
+- [x] **Step 3: Write to `data/content-items.json`**
+- [x] **Step 4: Print summary** — `migrated N items, skipped M`
+- [x] **Step 5: Run script + verify**
   - `node scripts/migrate-to-content-items.mjs`
   - `python3 -c "import json; d=json.load(open('data/content-items.json')); print(len(d['contentItems']), 'items'); print([{'name': c.get('hook')[:50], 'type': c['type'], 'state': c['state'], 'slides': len(c['slides'])} for c in d['contentItems']])"`
-- [ ] **Step 6: Commit** — `chore: migrate carousels to ContentItems`
+- [x] **Step 6: Commit** — `chore: migrate carousels to ContentItems`
 
 ---
 
@@ -94,20 +94,20 @@ Each task targets <250 LOC and has a Playwright or curl validation step before m
 - Create: `src/app/api/content/route.ts` (GET = list, POST = create)
 - Create: `src/app/api/content/[id]/route.ts` (GET, PATCH, DELETE)
 
-- [ ] **Step 1: GET `/api/content` → `{ contentItems: ContentItem[] }`** (mirror shape of `/api/carousels`)
-- [ ] **Step 2: GET `/api/content/[id]` → ContentItem or 404**
-- [ ] **Step 3: PATCH `/api/content/[id]` → validates body via `contentItemPatchSchema`, calls `updateContentItem`**
+- [x] **Step 1: GET `/api/content` → `{ contentItems: ContentItem[] }`** (mirror shape of `/api/carousels`)
+- [x] **Step 2: GET `/api/content/[id]` → ContentItem or 404**
+- [x] **Step 3: PATCH `/api/content/[id]` → validates body via `contentItemPatchSchema`, calls `updateContentItem`**
   - Reject patches that try to remove required fields (hook → empty is OK, but type must remain valid)
   - Returns updated item or 404
-- [ ] **Step 4: DELETE `/api/content/[id]` → 204**
-- [ ] **Step 5: POST `/api/content` → validates `newContentItemInputSchema`, creates with defaults**
-- [ ] **Step 6: Validate with curl**
+- [x] **Step 4: DELETE `/api/content/[id]` → 204**
+- [x] **Step 5: POST `/api/content` → validates `newContentItemInputSchema`, creates with defaults**
+- [x] **Step 6: Validate with curl**
   ```
   curl -s http://localhost:3000/api/content | python3 -m json.tool | head
   curl -s -X POST http://localhost:3000/api/content -H content-type:application/json -d '{"type":"post","hook":"hello"}'
   curl -s -X DELETE http://localhost:3000/api/content/<id>
   ```
-- [ ] **Step 7: Commit** — `feat(api): /api/content read + write endpoints`
+- [x] **Step 7: Commit** — `feat(api): /api/content read + write endpoints`
 
 ---
 
@@ -118,10 +118,10 @@ Each task targets <250 LOC and has a Playwright or curl validation step before m
 - Create: `src/app/api/content/[id]/slides/[slideId]/route.ts` (GET, PUT, DELETE)
 - Create: `src/app/api/content/[id]/slides/[slideId]/undo/route.ts`
 
-- [ ] **Step 1: Implement endpoints by adapting `src/app/api/carousels/[id]/slides/*` files** — same body shapes, swap to `appendSlide`/`updateSlide`/etc. from `content-items.ts`
-- [ ] **Step 2: Validate slide payloads with existing `slideElementSchema` + `newSlideInputSchema`**
-- [ ] **Step 3: Validate with curl** — same shapes as today; just URL prefix changes
-- [ ] **Step 4: Commit** — `feat(api): slide CRUD on /api/content`
+- [x] **Step 1: Implement endpoints by adapting `src/app/api/carousels/[id]/slides/*` files** — same body shapes, swap to `appendSlide`/`updateSlide`/etc. from `content-items.ts`
+- [x] **Step 2: Validate slide payloads with existing `slideElementSchema` + `newSlideInputSchema`**
+- [x] **Step 3: Validate with curl** — same shapes as today; just URL prefix changes
+- [x] **Step 4: Commit** — `feat(api): slide CRUD on /api/content`
 
 ---
 
@@ -131,20 +131,20 @@ Each task targets <250 LOC and has a Playwright or curl validation step before m
 - Create: `src/app/api/content/[id]/generate/route.ts`
 - Create: `src/lib/content-generation-system-prompt.ts`
 
-- [ ] **Step 1: System prompt builder**
+- [x] **Step 1: System prompt builder**
   - Inputs: `ContentItem` + brand + business context
   - Output: prompt that instructs Claude to design slides for THIS item's `type`/`hook`/`bodyIdea`/`caption`. Tells Claude the API base for `POST /api/content/[id]/slides`. Includes container/image model docs (copy from existing `chat-system-prompt.ts`).
-- [ ] **Step 2: POST `/api/content/[id]/generate`**
+- [x] **Step 2: POST `/api/content/[id]/generate`**
   - 409 if `state` already `generating`
   - Set `state="generating"`, set `aspectRatio` default per type if missing
   - Spawn Claude subprocess (mirror `/api/chat` route pattern, but with one-shot input instead of session)
   - Return SSE stream
   - When SSE `done`, server-side update `state="generated"`, set `generatedAt`
-- [ ] **Step 3: Validate via curl SSE**
+- [x] **Step 3: Validate via curl SSE**
   - Create test item in idea state with hook/bodyIdea
   - `curl -N -X POST http://localhost:3000/api/content/<id>/generate`
   - Confirm SSE tokens stream + slides appear via separate `GET /api/content/<id>` polling
-- [ ] **Step 4: Commit** — `feat(api): generate endpoint streams Claude design output`
+- [x] **Step 4: Commit** — `feat(api): generate endpoint streams Claude design output`
 
 ---
 
@@ -153,11 +153,11 @@ Each task targets <250 LOC and has a Playwright or curl validation step before m
 **Files:**
 - Create: `src/app/api/content/[id]/export/route.ts`
 
-- [ ] **Step 1: Adapt `src/app/api/carousels/[id]/export/route.ts`** — change source from carousel → content item; rest of Puppeteer pipeline unchanged
-- [ ] **Step 2: Validate**
+- [x] **Step 1: Adapt `src/app/api/carousels/[id]/export/route.ts`** — change source from carousel → content item; rest of Puppeteer pipeline unchanged
+- [x] **Step 2: Validate**
   - `curl -s -o /tmp/test.zip -X POST http://localhost:3000/api/content/<id>/export`
   - `unzip -l /tmp/test.zip` — should list slide-XX.png entries
-- [ ] **Step 3: Commit** — `feat(api): PNG ZIP export for ContentItems`
+- [x] **Step 3: Commit** — `feat(api): PNG ZIP export for ContentItems`
 
 ---
 
@@ -171,12 +171,12 @@ Each task targets <250 LOC and has a Playwright or curl validation step before m
 - Modify: `src/components/editor/SlideFilmstrip.tsx` (rename references)
 - Modify: `src/components/editor/Toolbar.tsx` (rename `carouselId`/`slideCount` props if exposed)
 
-- [ ] **Step 1: In `EditorBody`, rename prop `carouselId` → `contentItemId`** and update `persist` URL from `/api/carousels/${id}/slides/...` → `/api/content/${id}/slides/...`
-- [ ] **Step 2: Same for filmstrip's reorder/delete/undo URLs**
-- [ ] **Step 3: Toolbar: rename `carouselId` → `contentItemId`** (still passed through to ExportButton; update its URL too)
-- [ ] **Step 4: Verify the existing `/carousel/[id]` route still works** by passing `contentItemId={carousel.id}` (the old carousel routes still exist) AND ALSO that the new `/api/content/<id>/...` endpoints work for the migrated items
-- [ ] **Step 5: Playwright headed** — open one of the migrated carousels via `/content/<id>` (route doesn't exist yet, but you can test by mounting EditorBody manually in a temp page or just curl the API). Skip visual test until Task 5.1 mounts the route.
-- [ ] **Step 6: Typecheck + commit** — `refactor(editor): operate on ContentItem instead of Carousel`
+- [x] **Step 1: In `EditorBody`, rename prop `carouselId` → `contentItemId`** and update `persist` URL from `/api/carousels/${id}/slides/...` → `/api/content/${id}/slides/...`
+- [x] **Step 2: Same for filmstrip's reorder/delete/undo URLs**
+- [x] **Step 3: Toolbar: rename `carouselId` → `contentItemId`** (still passed through to ExportButton; update its URL too)
+- [x] **Step 4: Verify the existing `/carousel/[id]` route still works** by passing `contentItemId={carousel.id}` (the old carousel routes still exist) AND ALSO that the new `/api/content/<id>/...` endpoints work for the migrated items
+- [x] **Step 5: Playwright headed** — open one of the migrated carousels via `/content/<id>` (route doesn't exist yet, but you can test by mounting EditorBody manually in a temp page or just curl the API). Skip visual test until Task 5.1 mounts the route.
+- [x] **Step 6: Typecheck + commit** — `refactor(editor): operate on ContentItem instead of Carousel`
 
 ---
 
@@ -194,11 +194,11 @@ Each task targets <250 LOC and has a Playwright or curl validation step before m
 - Modify: `src/lib/context-chat-system-prompt.ts` — same
 - Modify: `.claude/commands/start.md`, `stop.md`, `doctor.md` — descriptions
 
-- [ ] **Step 1: `grep -rn "Open Carrusel" src/ README.md CLAUDE.md package.json .claude/`** — list every hit
-- [ ] **Step 2: Replace each — keep `open-carrusel` lowercase package alias OR rename to `open-social` (rename for consistency)**
-- [ ] **Step 3: Update `package-lock.json` if needed via `npm install` (no version bump, just lockfile sync)**
-- [ ] **Step 4: Visual smoke** — boot app, check tab title in browser is "Open Social"
-- [ ] **Step 5: Commit** — `chore: rebrand Open Carrusel → Open Social`
+- [x] **Step 1: `grep -rn "Open Carrusel" src/ README.md CLAUDE.md package.json .claude/`** — list every hit
+- [x] **Step 2: Replace each — keep `open-carrusel` lowercase package alias OR rename to `open-social` (rename for consistency)**
+- [x] **Step 3: Update `package-lock.json` if needed via `npm install` (no version bump, just lockfile sync)**
+- [x] **Step 4: Visual smoke** — boot app, check tab title in browser is "Open Social"
+- [x] **Step 5: Commit** — `chore: rebrand Open Carrusel → Open Social`
 
 ---
 
@@ -238,11 +238,11 @@ Each task targets <250 LOC and has a Playwright or curl validation step before m
 **Files:**
 - Modify: `src/app/content/[id]/page.tsx`
 
-- [ ] **Step 1: When state==="generating", poll `GET /api/content/[id]` every 800ms**
-- [ ] **Step 2: Update local state with new slides; when state flips to "generated", stop polling**
-- [ ] **Step 3: Also refetch on `window.focus`** — handles "user navigated away mid-flow" edge case
-- [ ] **Step 4: Playwright** — start a generation, see slides appear progressively in the canvas/filmstrip
-- [ ] **Step 5: Commit** — `feat(content): poll for streaming slides during generation`
+- [x] **Step 1: When state==="generating", poll `GET /api/content/[id]` every 800ms**
+- [x] **Step 2: Update local state with new slides; when state flips to "generated", stop polling**
+- [x] **Step 3: Also refetch on `window.focus`** — handles "user navigated away mid-flow" edge case
+- [ ] **Step 4: Playwright** — start a generation, see slides appear progressively in the canvas/filmstrip — skipped — dev server not running, code-only verification
+- [x] **Step 5: Commit** — `feat(content): poll for streaming slides during generation`
 
 ---
 
