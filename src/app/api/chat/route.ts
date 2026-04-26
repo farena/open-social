@@ -9,7 +9,6 @@ import { buildContentIdeaSystemPrompt } from "@/lib/content-idea-system-prompt";
 import { listAssets } from "@/lib/assets";
 import { getBrand } from "@/lib/brand";
 import { getBusinessContext } from "@/lib/business-context";
-import { getCarousel } from "@/lib/carousels";
 import { getContentItem } from "@/lib/content-items";
 import { getPreset } from "@/lib/style-presets";
 
@@ -93,10 +92,11 @@ export async function POST(request: NextRequest) {
         "[chat] mode 'carousel' is deprecated, use 'content-generation'"
       );
     }
+    const resolvedItemId = contentItemId || carouselId;
     const [brand, businessContext, carousel, stylePreset, assets] = await Promise.all([
       getBrand(),
       getBusinessContext(),
-      carouselId ? getCarousel(carouselId) : Promise.resolve(null),
+      resolvedItemId ? getContentItem(resolvedItemId) : Promise.resolve(null),
       stylePresetId ? getPreset(stylePresetId) : Promise.resolve(null),
       listAssets(),
     ]);

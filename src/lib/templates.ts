@@ -1,7 +1,7 @@
 import { readDataSafe, writeData } from "./data";
 import { generateId, now } from "./utils";
 import type { Template, TemplatesData } from "@/types/template";
-import type { Carousel } from "@/types/carousel";
+import type { ContentItem } from "@/types/content-item";
 
 const FILE = "templates.json";
 
@@ -24,17 +24,17 @@ export async function getTemplate(id: string): Promise<Template | null> {
 }
 
 export async function saveAsTemplate(
-  carousel: Carousel,
+  item: ContentItem,
   name?: string,
   description?: string
 ): Promise<Template> {
   const data = await load();
   const template: Template = {
     id: generateId(),
-    name: name || carousel.name,
-    description: description || `Template from ${carousel.name}`,
-    aspectRatio: carousel.aspectRatio,
-    slides: carousel.slides.map(({ id, order, notes, background, elements, legacyHtml }) => ({
+    name: name || item.hook || item.id,
+    description: description || `Template from ${item.hook || item.id}`,
+    aspectRatio: item.aspectRatio,
+    slides: item.slides.map(({ id, order, notes, background, elements, legacyHtml }) => ({
       id,
       order,
       notes,
@@ -42,7 +42,7 @@ export async function saveAsTemplate(
       elements,
       legacyHtml,
     })),
-    tags: carousel.tags,
+    tags: item.tags ?? [],
     createdAt: now(),
   };
   data.templates.push(template);

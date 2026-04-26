@@ -380,10 +380,10 @@ Each task targets <250 LOC and has a Playwright or curl validation step before m
 **Files:**
 - Modify: `src/components/content/ContentItemDetailIdea.tsx`
 
-- [ ] **Step 1: Disable Generate button immediately after click + spinner state**
-- [ ] **Step 2: Handle 409 from `/generate`** (already-generating) — show toast, don't navigate
-- [ ] **Step 3: Playwright** — double-click Generate, only one generation kicks off
-- [ ] **Step 4: Commit** — `fix(content): debounce Generate button + handle 409`
+- [x] **Step 1: Disable Generate button immediately after click + spinner state**
+- [x] **Step 2: Handle 409 from `/generate`** (already-generating) — show toast, don't navigate
+- [~] **Step 3: Playwright** — skipped (no dev server)
+- [x] **Step 4: Commit** — `fix(content): debounce Generate button + handle 409`
 
 ---
 
@@ -394,9 +394,9 @@ Each task targets <250 LOC and has a Playwright or curl validation step before m
 **Files:**
 - Modify: `src/app/carousel/[id]/page.tsx`
 
-- [ ] **Step 1: Replace page body with `redirect("/content/" + id)` from `next/navigation`**
-- [ ] **Step 2: Confirm old links still work in browser**
-- [ ] **Step 3: Commit** — `chore: redirect /carousel/[id] → /content/[id]`
+- [x] **Step 1: Replace page body with `redirect("/content/" + id)` from `next/navigation`**
+- [~] **Step 2: Confirm old links still work in browser** — skipped (no dev server)
+- [x] **Step 3: Commit** — `chore: redirect /carousel/[id] → /content/[id]`
 
 ---
 
@@ -414,12 +414,12 @@ Each task targets <250 LOC and has a Playwright or curl validation step before m
 - Delete: `src/app/api/carousels/[id]/assets/*`
 - Delete: `src/components/ui/create-carousel-dialog.tsx`
 - Modify: `src/types/carousel.ts` — keep ONLY `Slide`, `AspectRatio`, `DIMENSIONS`, `MAX_SLIDES`. Drop the `Carousel` interface.
-- Delete: `data/carousels.json` (after backup verified)
+- [~] Delete: `data/carousels.json` (after backup verified) — skipped — pending user confirmation
 
-- [ ] **Step 1: Grep for any remaining imports of removed files** — `grep -rn "from \"@/lib/carousels\"\|from \"@/app/api/carousels\"" src/` → fix or remove
-- [ ] **Step 2: Typecheck must pass**
-- [ ] **Step 3: Playwright full smoke** — dashboard loads, click row, editor opens, edit, save, persist, reload survives
-- [ ] **Step 4: Commit** — `chore: remove deprecated carousel surface`
+- [x] **Step 1: Grep for any remaining imports of removed files** — `grep -rn "from \"@/lib/carousels\"\|from \"@/app/api/carousels\"" src/` → fix or remove
+- [x] **Step 2: Typecheck must pass**
+- [~] **Step 3: Playwright full smoke** — skipped (no dev server)
+- [x] **Step 4: Commit** — `chore: remove deprecated carousel surface`
 
 ---
 

@@ -30,26 +30,6 @@ export interface ReferenceImage {
   addedAt: string;
 }
 
-export interface Carousel {
-  id: string;
-  name: string;
-  aspectRatio: AspectRatio;
-  slides: Slide[];
-  referenceImages: ReferenceImage[];
-  assets?: import("./asset").Asset[];
-  caption?: string;
-  hashtags?: string[];
-  chatSessionId: string | null;
-  isTemplate: boolean;
-  tags: string[];
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface CarouselsData {
-  carousels: Carousel[];
-}
-
 export const DIMENSIONS: Record<AspectRatio, { width: number; height: number }> = {
   "1:1": { width: 1080, height: 1080 },
   "4:5": { width: 1080, height: 1350 },

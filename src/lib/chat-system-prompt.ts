@@ -1,13 +1,13 @@
 import type { Asset } from "@/types/asset";
 import type { BrandConfig } from "@/types/brand";
 import type { BusinessContext } from "@/types/business-context";
-import type { Carousel } from "@/types/carousel";
+import type { ContentItem } from "@/types/content-item";
 import type { StylePreset } from "@/types/style-preset";
 import { DIMENSIONS, MAX_SLIDES } from "@/types/carousel";
 
 export function buildSystemPrompt(
   brand: BrandConfig,
-  carousel?: Carousel | null,
+  carousel?: ContentItem | null,
   stylePreset?: StylePreset | null,
   businessContext?: BusinessContext | null,
   assets?: Asset[] | null
@@ -48,13 +48,13 @@ Every carousel you create MUST be aligned with this business context: speak to t
 Use professional defaults: dark text on white/light backgrounds, Inter font, clean minimal style.`;
 
   const carouselSection = carousel
-    ? `## Current carousel
+    ? `## Current content item
 - ID: ${carousel.id}
-- Name: "${carousel.name}"
+- Hook: "${carousel.hook}"
 - Aspect ratio: ${carousel.aspectRatio} (${DIMENSIONS[carousel.aspectRatio].width}x${DIMENSIONS[carousel.aspectRatio].height}px)
 - Slides: ${carousel.slides.length}/${MAX_SLIDES}
 ${carousel.slides.length > 0 ? carousel.slides.map((s) => `  - Slide ${s.order + 1} (ID: ${s.id})${s.notes ? ` — ${s.notes}` : ""}`).join("\n") : "  (no slides yet)"}
-${(carousel.referenceImages?.length ?? 0) > 0 ? `\n## Reference images (use Read to view these)\n${carousel.referenceImages.map((r) => `- "${r.name}" → ${r.absPath}`).join("\n")}` : ""}`
+${(carousel.referenceImages?.length ?? 0) > 0 ? `\n## Reference images (use Read to view these)\n${carousel.referenceImages!.map((r) => `- "${r.name}" → ${r.absPath}`).join("\n")}` : ""}`
     : "";
 
   const formatAssetLine = (a: Asset) =>
