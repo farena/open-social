@@ -270,9 +270,9 @@ Each task targets <250 LOC and has a Playwright or curl validation step before m
 **Files:**
 - Create: `src/components/dashboard/ContentItemsTable.tsx`
 
-- [ ] **Step 1: Props: `items: ContentItem[]`, `onDelete(id)`, `onCreateBlank()`**
-- [ ] **Step 2: Header row with `+ New idea` button + filters (type select, state select)**
-- [ ] **Step 3: Table body — each row clickable (`<Link href={"/content/" + id}>`):**
+- [x] **Step 1: Props: `items: ContentItem[]`, `onDelete(id)`, `onCreateBlank()`**
+- [x] **Step 2: Header row with `+ New idea` button + filters (type select, state select)**
+- [x] **Step 3: Table body — each row clickable (`<Link href={"/content/" + id}>`):**
   - Hook (truncated, max 60 chars)
   - Type (badge: post/story/carousel)
   - Body idea (truncated, max 80)
@@ -280,8 +280,8 @@ Each task targets <250 LOC and has a Playwright or curl validation step before m
   - Hashtags (count badge + first one)
   - State badge (idea/generating/generated)
   - Actions: delete (confirm dialog)
-- [ ] **Step 4: Empty state** — friendly CTA: "Ask the agent on the left to generate ideas, or click + New idea"
-- [ ] **Step 5: Commit** — `feat(dashboard): ContentItemsTable`
+- [x] **Step 4: Empty state** — friendly CTA: "Ask the agent on the left to generate ideas, or click + New idea"
+- [x] **Step 5: Commit** — `feat(dashboard): ContentItemsTable`
 
 ---
 
