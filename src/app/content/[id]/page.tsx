@@ -177,19 +177,15 @@ export default function ContentItemPage({ params }: PageProps) {
     }, 100);
   }, []);
 
-  // Called by ContentItemDetailIdea "Generate Content" button
-  const handleGenerateRequested = useCallback(async () => {
+  // Called by ContentItemDetailIdea after a successful POST /generate (2xx only)
+  const handleGenerateRequested = useCallback(() => {
     if (!item) return;
-    // Fire-and-forget: the SSE stream runs in the background
-    fetch(`/api/content/${id}/generate`, { method: "POST" }).catch(() => {
-      // ignore — state will be polling-corrected
-    });
-    // Optimistically switch to editor view
+    // Optimistically switch to editor view — the component already fired the POST
     setItem((prev) =>
       prev ? { ...prev, state: "generating" } : prev
     );
     setIsGenerating(true);
-  }, [item, id]);
+  }, [item]);
 
   // --- Loading / 404 ---
 

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Save, Check, Plus, X } from "lucide-react";
+import { Save, Check, Plus, X, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ContentIdeaChat } from "@/components/content/ContentIdeaChat";
@@ -59,6 +59,8 @@ export function ContentItemDetailIdea({
   const [newHashtag, setNewHashtag] = useState("");
   const [saving, setSaving] = useState(false);
   const [savedFlash, setSavedFlash] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [generateError, setGenerateError] = useState<string | null>(null);
 
   const canGenerate = hook.trim() !== "" && bodyIdea.trim() !== "" && type !== undefined;
 
@@ -71,6 +73,32 @@ export function ContentItemDetailIdea({
 
   const removeHashtag = (i: number) => {
     setHashtags(hashtags.filter((_, idx) => idx !== i));
+  };
+
+  const handleGenerate = async () => {
+    if (isGenerating) return;
+    setIsGenerating(true);
+    setGenerateError(null);
+    try {
+      const res = await fetch(`/api/content/${contentItem.id}/generate`, {
+        method: "POST",
+      });
+      if (res.status === 409) {
+        setGenerateError("Generation is already in progress for this item.");
+        setIsGenerating(false);
+        return;
+      }
+      if (!res.ok) {
+        setGenerateError("Failed to start generation. Please try again.");
+        setIsGenerating(false);
+        return;
+      }
+      // 2xx — hand off to parent (navigate to editor)
+      onGenerateRequested();
+    } catch {
+      setGenerateError("Network error. Please try again.");
+      setIsGenerating(false);
+    }
   };
 
   const handleSave = async () => {
@@ -256,12 +284,24 @@ export function ContentItemDetailIdea({
               variant="accent"
               size="lg"
               className="w-full"
-              disabled={!canGenerate}
-              onClick={onGenerateRequested}
+              disabled={!canGenerate || isGenerating}
+              onClick={handleGenerate}
             >
-              Generate Content
+              {isGenerating ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Starting generation…
+                </>
+              ) : (
+                "Generate Content"
+              )}
             </Button>
-            {!canGenerate && (
+            {generateError && (
+              <p className="text-sm text-amber-600 text-center mt-2">
+                {generateError}
+              </p>
+            )}
+            {!canGenerate && !generateError && (
               <p className="text-xs text-muted-foreground text-center mt-2">
                 Fill in Hook and Body idea to unlock generation.
               </p>
