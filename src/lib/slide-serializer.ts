@@ -7,11 +7,8 @@ export type SerializableSlide = Pick<
 >;
 import type {
   BackgroundElement,
-  ElementFill,
+  ContainerElement,
   ImageElement,
-  ShapeElement,
-  Span,
-  TextElement,
   SlideElement,
 } from "@/types/slide-model";
 
@@ -23,10 +20,11 @@ import type {
  *   - preview iframe (live editor)
  *   - Puppeteer screenshot (PNG export)
  *
- * That guarantees pixel-perfect parity between what the user sees and what
- * gets exported.
- *
  * Element ordering in `slide.elements` defines z-index (later = on top).
+ *
+ * `scssStyles` is treated as native CSS with nesting (`&` selectors). It is
+ * scoped via an injected `<style>[data-element-id="ID"] { ... }</style>` block
+ * inside the element wrapper.
  *
  * If `slide.legacyHtml` is present, it's returned as-is — escape hatch for
  * slides whose original HTML couldn't be parsed by the migrator.
@@ -41,7 +39,10 @@ export function serializeSlideToHtml(
 
   const { width, height } = DIMENSIONS[aspectRatio];
   const bgStyles = backgroundCss(slide.background);
-  const elementsHtml = slide.elements.map(renderElement).join("\n");
+  const elementsHtml = slide.elements
+    .filter((el) => !el.hidden)
+    .map(renderElement)
+    .join("\n");
 
   return `<div data-slide-root style="position: relative; width: ${width}px; height: ${height}px; overflow: hidden; ${bgStyles}">
 ${elementsHtml}
@@ -50,93 +51,28 @@ ${elementsHtml}
 
 function renderElement(el: SlideElement): string {
   switch (el.kind) {
-    case "text":
-      return renderText(el);
+    case "container":
+      return renderContainer(el);
     case "image":
       return renderImage(el);
-    case "shape":
-      return renderShape(el);
   }
 }
 
-function renderText(el: TextElement): string {
-  const wrapperStyles = [
-    "position: absolute",
-    `left: ${el.position.x}px`,
-    `top: ${el.position.y}px`,
-    `width: ${el.size.w}px`,
-    el.size.h === "auto" ? "" : `height: ${el.size.h}px`,
-    "display: flex",
-    "flex-direction: column",
-    `justify-content: ${alignmentToFlex(el.alignment, "vertical")}`,
-    `text-align: ${el.alignment}`,
-    `line-height: ${el.lineHeight}`,
-    el.letterSpacing != null ? `letter-spacing: ${el.letterSpacing}px` : "",
-    el.rotation ? `transform: rotate(${el.rotation}deg)` : "",
-    el.opacity != null ? `opacity: ${el.opacity}` : "",
-  ]
-    .filter(Boolean)
-    .join("; ");
-
-  const inner = el.spans.map(renderSpan).join("");
-
-  return `<div data-element-id="${escapeAttr(el.id)}" data-element-kind="text" style="${wrapperStyles}"><div>${inner}</div></div>`;
-}
-
-function renderSpan(span: Span): string {
-  const styles = [
-    `font-family: '${cssString(span.fontFamily)}'`,
-    `font-size: ${span.fontSize}px`,
-    `font-weight: ${span.fontWeight}`,
-    `color: ${span.color}`,
-    span.italic ? "font-style: italic" : "",
-    span.underline ? "text-decoration: underline" : "",
-  ]
-    .filter(Boolean)
-    .join("; ");
-  return `<span style="${styles}">${escapeText(span.content)}</span>`;
+function renderContainer(el: ContainerElement): string {
+  const id = escapeAttr(el.id);
+  const wrapperStyle = baseWrapperStyle(el);
+  const scoped = scopedStyleBlock(el.id, el.scssStyles);
+  return `<div data-element-id="${id}" data-element-kind="container" style="${wrapperStyle}">${scoped}${el.htmlContent ?? ""}</div>`;
 }
 
 function renderImage(el: ImageElement): string {
-  const wrapperStyles = baseElementStyles(el);
-  const imgStyles = [
-    "width: 100%",
-    "height: 100%",
-    `object-fit: ${el.fit}`,
-    "display: block",
-    el.borderRadius != null ? `border-radius: ${el.borderRadius}px` : "",
-  ]
-    .filter(Boolean)
-    .join("; ");
-
-  return `<div data-element-id="${escapeAttr(el.id)}" data-element-kind="image" style="${wrapperStyles}; ${
-    el.borderRadius != null ? `border-radius: ${el.borderRadius}px; overflow: hidden;` : ""
-  }"><img src="${escapeAttr(el.src)}" alt="" style="${imgStyles}" /></div>`;
+  const id = escapeAttr(el.id);
+  const wrapperStyle = baseWrapperStyle(el);
+  const scoped = scopedStyleBlock(el.id, el.scssStyles);
+  return `<div data-element-id="${id}" data-element-kind="image" style="${wrapperStyle}">${scoped}<img src="${escapeAttr(el.src)}" alt="" style="display: block; width: 100%; height: 100%;" /></div>`;
 }
 
-function renderShape(el: ShapeElement): string {
-  const radiusValue =
-    el.shape === "circle"
-      ? "50%"
-      : el.borderRadius != null
-        ? `${el.borderRadius}px`
-        : "0";
-
-  const styles = [
-    baseElementStyles(el),
-    `background: ${fillToCss(el.fill)}`,
-    `border-radius: ${radiusValue}`,
-    el.border ? `border: ${el.border.width}px solid ${el.border.color}` : "",
-  ]
-    .filter(Boolean)
-    .join("; ");
-
-  return `<div data-element-id="${escapeAttr(el.id)}" data-element-kind="shape" style="${styles}"></div>`;
-}
-
-function baseElementStyles(
-  el: ImageElement | ShapeElement,
-): string {
+function baseWrapperStyle(el: SlideElement): string {
   return [
     "position: absolute",
     `left: ${el.position.x}px`,
@@ -145,9 +81,22 @@ function baseElementStyles(
     `height: ${el.size.h}px`,
     el.rotation ? `transform: rotate(${el.rotation}deg)` : "",
     el.opacity != null ? `opacity: ${el.opacity}` : "",
+    "box-sizing: border-box",
   ]
     .filter(Boolean)
     .join("; ");
+}
+
+/**
+ * Wraps user CSS in an attribute-selector scope so nested selectors target
+ * descendants of this element only. We strip `</style` to prevent escaping
+ * the style block (the iframe sandbox already blocks `<script>`).
+ */
+function scopedStyleBlock(id: string, css: string | undefined): string {
+  if (!css || !css.trim()) return "";
+  const safe = css.replace(/<\/style/gi, "");
+  const selector = `[data-element-id="${escapeAttr(id)}"]`;
+  return `<style>${selector} { ${safe} }</style>`;
 }
 
 function backgroundCss(bg: BackgroundElement): string {
@@ -161,11 +110,6 @@ function backgroundCss(bg: BackgroundElement): string {
   }
 }
 
-function fillToCss(fill: ElementFill): string {
-  if (fill.kind === "solid") return fill.color;
-  return gradientToCss(fill.angle, fill.stops);
-}
-
 function gradientToCss(
   angle: number,
   stops: { offset: number; color: string }[],
@@ -176,35 +120,11 @@ function gradientToCss(
   return `linear-gradient(${angle}deg, ${stopStr})`;
 }
 
-function alignmentToFlex(
-  alignment: "left" | "center" | "right",
-  axis: "vertical",
-): string {
-  // Vertical centering of inner block by default. If callers need other
-  // vertical alignment in V2, expand here.
-  if (axis === "vertical") return "center";
-  if (alignment === "left") return "flex-start";
-  if (alignment === "right") return "flex-end";
-  return "center";
-}
-
-function escapeText(text: string): string {
-  return text
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;");
-}
-
 function escapeAttr(value: string): string {
   return value
     .replace(/&/g, "&amp;")
     .replace(/"/g, "&quot;")
     .replace(/</g, "&lt;");
-}
-
-function cssString(value: string): string {
-  // Strip single quotes — we wrap font names in single quotes.
-  return value.replace(/'/g, "");
 }
 
 function cssUrl(value: string): string {

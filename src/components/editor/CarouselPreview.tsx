@@ -1,38 +1,42 @@
 "use client";
 
-import { useState, useCallback, type CSSProperties } from "react";
+import { useState, type CSSProperties } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SlideCanvas } from "./SlideCanvas";
 import { SlideOverlay } from "./SlideOverlay";
 import { SafeZoneOverlay } from "./SafeZoneOverlay";
-import { PropertiesPanel } from "./PropertiesPanel";
-import { useSlideEditor } from "./useSlideEditor";
-import { useEditorShortcuts } from "./useEditorShortcuts";
 import type { Slide, AspectRatio } from "@/types/carousel";
+import type { Selection, SlideEditorAction } from "./useSlideEditor";
 
 interface CarouselPreviewProps {
-  carouselId: string;
   slides: Slide[];
   aspectRatio: AspectRatio;
   activeIndex: number;
   onActiveChange: (index: number) => void;
   showSafeZones?: boolean;
-  onSlidePersisted?: (slide: Slide) => void;
-  onUndoSlide?: (slideId: string) => void;
+  /** Live editor state — owned by the page so the side panel can read it too. */
+  slide: Slide;
+  selection: Selection;
+  dispatch: (action: SlideEditorAction) => void;
 }
 
+/**
+ * Pure preview surface: shows the active slide on a canvas with hit/resize
+ * overlay, plus prev/next navigation. Editor state (selection, dispatch) is
+ * lifted to the parent so the right-rail PropertiesPanel can be a sibling
+ * inside `#main-editor-area`.
+ */
 export function CarouselPreview({
-  carouselId,
   slides,
   aspectRatio,
   activeIndex,
   onActiveChange,
   showSafeZones = false,
-  onSlidePersisted,
-  onUndoSlide,
+  slide,
+  selection,
+  dispatch,
 }: CarouselPreviewProps) {
-  const slide = slides[activeIndex];
   const [prevIndex, setPrevIndex] = useState(activeIndex);
   const [direction, setDirection] = useState(12);
   if (prevIndex !== activeIndex) {
@@ -40,24 +44,8 @@ export function CarouselPreview({
     setPrevIndex(activeIndex);
   }
 
-  if (!slide) {
-    return (
-      <div className="flex-1 flex items-center justify-center bg-[#f0f0f0]">
-        <div className="text-center text-muted-foreground p-8">
-          <div className="w-16 h-20 border-2 border-dashed border-muted-foreground/30 rounded-lg mx-auto mb-4 flex items-center justify-center">
-            <span className="text-2xl opacity-30">+</span>
-          </div>
-          <p className="text-sm font-medium">No slides yet</p>
-          <p className="text-xs mt-1 max-w-[200px]">
-            Use the AI assistant to create your first carousel slide
-          </p>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="flex-1 flex min-h-0 min-w-0">
+    <div className="flex-1 flex min-h-0 min-w-0" id="carousel-preview">
       <div className="flex-1 flex flex-col min-h-0 min-w-0 bg-[#f0f0f0]">
         <div className="flex-1 relative min-h-0 p-8 px-14">
           <Button
@@ -76,14 +64,24 @@ export function CarouselPreview({
             className="oc-slide-in relative w-full h-full"
             style={{ "--oc-slide-from": `${direction}px` } as CSSProperties}
           >
-            <EditableSlide
-              carouselId={carouselId}
+            <SlideCanvas
               slide={slide}
               aspectRatio={aspectRatio}
-              onSlidePersisted={onSlidePersisted}
-              onUndoSlide={onUndoSlide}
+              style={{ width: "100%", height: "100%" }}
+              overlay={({ scale, canvas }) => (
+                <SlideOverlay
+                  slide={slide}
+                  selection={selection}
+                  scale={scale}
+                  canvas={canvas}
+                  dispatch={dispatch}
+                />
+              )}
             />
-            <SafeZoneOverlay aspectRatio={aspectRatio} visible={showSafeZones} />
+            <SafeZoneOverlay
+              aspectRatio={aspectRatio}
+              visible={showSafeZones}
+            />
           </div>
 
           <Button
@@ -122,77 +120,22 @@ export function CarouselPreview({
   );
 }
 
-interface EditableSlideProps {
-  carouselId: string;
-  slide: Slide;
-  aspectRatio: AspectRatio;
-  onSlidePersisted?: (slide: Slide) => void;
-  onUndoSlide?: (slideId: string) => void;
-}
-
-function EditableSlide({
-  carouselId,
-  slide: externalSlide,
-  aspectRatio,
-  onSlidePersisted,
-  onUndoSlide,
-}: EditableSlideProps) {
-  const persist = useCallback(
-    async (slide: Slide) => {
-      const res = await fetch(
-        `/api/carousels/${carouselId}/slides/${slide.id}`,
-        {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            background: slide.background,
-            elements: slide.elements,
-            ...(slide.legacyHtml !== undefined
-              ? { legacyHtml: slide.legacyHtml }
-              : {}),
-          }),
-        },
-      );
-      if (res.ok && onSlidePersisted) {
-        const updated = await res.json();
-        onSlidePersisted(updated);
-      }
-    },
-    [carouselId, onSlidePersisted],
-  );
-
-  const { slide, selection, dispatch } = useSlideEditor(externalSlide, {
-    onPersist: persist,
-  });
-
-  useEditorShortcuts({
-    slide,
-    selection,
-    dispatch,
-    onUndoRequest: onUndoSlide ? () => onUndoSlide(slide.id) : undefined,
-  });
-
+/**
+ * Empty placeholder shown when the carousel has no slides yet. Kept as a
+ * named export so the page can render it when `slides.length === 0`.
+ */
+export function CarouselPreviewEmpty() {
   return (
-    <div className="flex w-full h-full">
-      <SlideCanvas
-        slide={slide}
-        aspectRatio={aspectRatio}
-        style={{ flex: 1, height: "100%" }}
-        overlay={({ scale, canvas }) => (
-          <SlideOverlay
-            slide={slide}
-            selection={selection}
-            scale={scale}
-            canvas={canvas}
-            dispatch={dispatch}
-          />
-        )}
-      />
-      <PropertiesPanel
-        slide={slide}
-        selection={selection}
-        dispatch={dispatch}
-      />
+    <div className="flex-1 flex items-center justify-center bg-[#f0f0f0]">
+      <div className="text-center text-muted-foreground p-8">
+        <div className="w-16 h-20 border-2 border-dashed border-muted-foreground/30 rounded-lg mx-auto mb-4 flex items-center justify-center">
+          <span className="text-2xl opacity-30">+</span>
+        </div>
+        <p className="text-sm font-medium">No slides yet</p>
+        <p className="text-xs mt-1 max-w-[200px]">
+          Use the AI assistant to create your first carousel slide
+        </p>
+      </div>
     </div>
   );
 }

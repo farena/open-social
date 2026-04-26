@@ -21,6 +21,10 @@ interface UseEditorShortcutsOptions {
  *   - Esc: deselect
  *   - Cmd/Ctrl+D: duplicate selected element with offset
  *   - Cmd/Ctrl+Z: server-side undo of the last snapshot
+ *   - Cmd/Ctrl+]: bring selected element forward one layer
+ *   - Cmd/Ctrl+[: send selected element backward one layer
+ *   - Cmd/Ctrl+Shift+]: bring selected element to front
+ *   - Cmd/Ctrl+Shift+[: send selected element to back
  *   - Arrow keys: nudge selected element by 1px (Shift = 10px)
  *
  * Listeners are bound to window. They no-op when the user is typing in an
@@ -66,6 +70,18 @@ export function useEditorShortcuts({
 
       const sel = slide.elements.find((el) => el.id === selection);
       if (!sel) return;
+
+      // Cmd/Ctrl+] / Cmd/Ctrl+[ — z-order (Photoshop-style)
+      // Shift modifier bumps to front/back; without it, one step.
+      if (meta && (e.key === "]" || e.key === "[")) {
+        e.preventDefault();
+        const forward = e.key === "]";
+        const direction = e.shiftKey
+          ? forward ? "top" : "bottom"
+          : forward ? "up" : "down";
+        dispatch({ type: "REORDER_Z", elementId: sel.id, direction });
+        return;
+      }
 
       // Cmd/Ctrl+D — duplicate
       if (meta && e.key.toLowerCase() === "d") {

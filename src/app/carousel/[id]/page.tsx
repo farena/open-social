@@ -3,15 +3,13 @@
 import { useEffect, useState, useCallback, useRef, use } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Trash2, Grid3X3, Bookmark, Maximize2 } from "lucide-react";
 import { TopBar } from "@/components/layout/TopBar";
-import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { ChatPanel } from "@/components/chat/ChatPanel";
-import { CarouselPreview } from "@/components/editor/CarouselPreview";
+import { CarouselPreviewEmpty } from "@/components/editor/CarouselPreview";
+import { EditorBody } from "@/components/editor/EditorBody";
+import { Toolbar } from "@/components/editor/Toolbar";
 import { SlideFilmstrip } from "@/components/editor/SlideFilmstrip";
-import { AspectRatioSelector } from "@/components/editor/AspectRatioSelector";
-import { ExportButton } from "@/components/editor/ExportButton";
 import { CaptionPanel } from "@/components/editor/CaptionPanel";
 import { FullscreenPreview } from "@/components/editor/FullscreenPreview";
 import type { Carousel, AspectRatio } from "@/types/carousel";
@@ -58,7 +56,9 @@ export default function CarouselEditorPage({ params }: PageProps) {
             setActiveSlide(data.slides.length - 1);
           } else {
             setActiveSlide((prevIdx) =>
-              data.slides.length === 0 ? 0 : Math.min(prevIdx, data.slides.length - 1)
+              data.slides.length === 0
+                ? 0
+                : Math.min(prevIdx, data.slides.length - 1)
             );
           }
           return data;
@@ -134,7 +134,8 @@ export default function CarouselEditorPage({ params }: PageProps) {
     setConfirmState({
       open: true,
       title: `Delete "${carousel.name}"?`,
-      description: "This will permanently delete the carousel and all its slides.",
+      description:
+        "This will permanently delete the carousel and all its slides.",
       onConfirm: async () => {
         const res = await fetch(`/api/carousels/${id}`, { method: "DELETE" });
         if (res.ok) router.push("/");
@@ -234,7 +235,10 @@ export default function CarouselEditorPage({ params }: PageProps) {
       />
 
       {/* Main editor area */}
-      <div className="flex-1 flex min-h-0 overflow-hidden">
+      <div
+        className="flex-1 flex min-h-0 overflow-hidden"
+        id="main-editor-area"
+      >
         {/* Chat panel */}
         {chatOpen && (
           <div className="oc-fade w-80 border-r border-border shrink-0 flex flex-col bg-surface">
@@ -249,74 +253,38 @@ export default function CarouselEditorPage({ params }: PageProps) {
           </div>
         )}
 
-        {/* Right side: toolbar + preview */}
-        <div className="flex-1 flex flex-col min-w-0 min-h-0">
-          {/* Toolbar */}
-          <div className="h-11 border-b border-border bg-surface flex items-center px-4 gap-3 shrink-0">
-            <AspectRatioSelector
-              value={carousel.aspectRatio}
-              onChange={handleAspectChange}
-            />
-            <div className="flex-1" />
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setShowFullscreen(true)}
-              className="text-muted-foreground"
-              aria-label="Fullscreen preview"
-              title="Fullscreen preview"
-            >
-              <Maximize2 className="h-3.5 w-3.5" />
-            </Button>
-            <Button
-              variant={showSafeZones ? "outline" : "ghost"}
-              size="sm"
-              onClick={() => setShowSafeZones(!showSafeZones)}
-              className={showSafeZones ? "border-accent text-accent" : "text-muted-foreground"}
-              aria-label="Toggle safe zones"
-              title="Instagram safe zones"
-            >
-              <Grid3X3 className="h-3.5 w-3.5" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={async () => {
+        {/* Toolbar + canvas (middle column) and PropertiesPanel (right rail).
+            EditorBody returns a fragment so both render as direct children
+            of #main-editor-area, alongside ChatPanel. */}
+        {carousel.slides.length === 0 ? (
+          <div className="flex-1 flex flex-col min-w-0 min-h-0">
+            <Toolbar
+              aspectRatio={carousel.aspectRatio}
+              onAspectChange={handleAspectChange}
+              showSafeZones={showSafeZones}
+              onToggleSafeZones={() => setShowSafeZones(!showSafeZones)}
+              onFullscreen={() => setShowFullscreen(true)}
+              onSaveTemplate={async () => {
                 await fetch("/api/templates", {
                   method: "POST",
                   headers: { "Content-Type": "application/json" },
                   body: JSON.stringify({ carouselId: carousel.id }),
                 });
               }}
-              className="text-muted-foreground"
-              aria-label="Save as template"
-              title="Save as template"
-            >
-              <Bookmark className="h-3.5 w-3.5" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleDeleteCarousel}
-              className="text-muted-foreground hover:text-destructive"
-              aria-label="Delete carousel"
-            >
-              <Trash2 className="h-3.5 w-3.5" />
-            </Button>
-            <button
-              onClick={() => setChatOpen(!chatOpen)}
-              className="text-xs text-muted-foreground hover:text-foreground transition-colors px-3 py-1.5 rounded-md border border-border hover:bg-muted"
-            >
-              {chatOpen ? "Hide Chat" : "Show Chat"}
-            </button>
-            <ExportButton
+              onDeleteCarousel={handleDeleteCarousel}
+              chatOpen={chatOpen}
+              onToggleChat={() => setChatOpen(!chatOpen)}
               carouselId={carousel.id}
               slideCount={carousel.slides.length}
             />
+            <CarouselPreviewEmpty />
+            <CaptionPanel
+              caption={carousel.caption}
+              hashtags={carousel.hashtags}
+            />
           </div>
-
-          {/* Carousel preview */}
-          <CarouselPreview
+        ) : (
+          <EditorBody
             carouselId={carousel.id}
             slides={carousel.slides}
             aspectRatio={carousel.aspectRatio}
@@ -336,14 +304,35 @@ export default function CarouselEditorPage({ params }: PageProps) {
                   : prev,
               );
             }}
+            toolbar={
+              <Toolbar
+                aspectRatio={carousel.aspectRatio}
+                onAspectChange={handleAspectChange}
+                showSafeZones={showSafeZones}
+                onToggleSafeZones={() => setShowSafeZones(!showSafeZones)}
+                onFullscreen={() => setShowFullscreen(true)}
+                onSaveTemplate={async () => {
+                  await fetch("/api/templates", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ carouselId: carousel.id }),
+                  });
+                }}
+                onDeleteCarousel={handleDeleteCarousel}
+                chatOpen={chatOpen}
+                onToggleChat={() => setChatOpen(!chatOpen)}
+                carouselId={carousel.id}
+                slideCount={carousel.slides.length}
+              />
+            }
+            belowPreview={
+              <CaptionPanel
+                caption={carousel.caption}
+                hashtags={carousel.hashtags}
+              />
+            }
           />
-
-          {/* Caption panel */}
-          <CaptionPanel
-            caption={carousel.caption}
-            hashtags={carousel.hashtags}
-          />
-        </div>
+        )}
       </div>
 
       {/* Filmstrip */}

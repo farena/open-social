@@ -1,9 +1,8 @@
 "use client";
 
 import { useCallback, useState, type PointerEvent as RPointerEvent } from "react";
-import dynamic from "next/dynamic";
 import type { Slide } from "@/types/carousel";
-import type { SlideElement, Span, TextElement } from "@/types/slide-model";
+import type { SlideElement } from "@/types/slide-model";
 import {
   clampToCanvas,
   resizeFromAnchor,
@@ -11,12 +10,6 @@ import {
   type ResizeAnchor,
 } from "@/lib/slide-coords";
 import type { Selection, SlideEditorAction } from "./useSlideEditor";
-
-// Lazy: Lexical only loads when a text element is double-clicked.
-const LexicalTextEditor = dynamic(
-  () => import("./LexicalTextEditor").then((m) => m.LexicalTextEditor),
-  { ssr: false },
-);
 
 interface SlideOverlayProps {
   slide: Slide;
@@ -34,6 +27,9 @@ interface SlideOverlayProps {
  * All math is done in canvas-space (1080×1350 etc.) and scaled to screen-
  * space at render time. Pointer deltas come in screen-space and are
  * divided by `scale` before mutating the JSON.
+ *
+ * Inline content editing was removed when the model collapsed to
+ * container/image. Edit `htmlContent` and `scssStyles` from the right rail.
  */
 export function SlideOverlay({
   slide,
@@ -42,8 +38,6 @@ export function SlideOverlay({
   canvas,
   dispatch,
 }: SlideOverlayProps) {
-  const [editingTextId, setEditingTextId] = useState<string | null>(null);
-
   const handlePointerDownEmpty = useCallback(
     (e: RPointerEvent<HTMLDivElement>) => {
       if (e.target === e.currentTarget) {
@@ -52,12 +46,6 @@ export function SlideOverlay({
     },
     [dispatch],
   );
-
-  const editingElement =
-    editingTextId &&
-    (slide.elements.find(
-      (el) => el.id === editingTextId && el.kind === "text",
-    ) as TextElement | undefined);
 
   return (
     <div
@@ -75,15 +63,10 @@ export function SlideOverlay({
           scale={scale}
           canvas={canvas}
           isSelected={selection === el.id}
-          isEditing={editingTextId === el.id}
           dispatch={dispatch}
-          onEnterTextEdit={() => {
-            if (el.kind === "text") setEditingTextId(el.id);
-          }}
         />
       ))}
       {selection &&
-        !editingTextId &&
         (() => {
           const sel = slide.elements.find((el) => el.id === selection);
           if (!sel) return null;
@@ -96,21 +79,6 @@ export function SlideOverlay({
             />
           );
         })()}
-      {editingElement && (
-        <LexicalTextEditor
-          element={editingElement}
-          scale={scale}
-          onCommit={(spans: Span[]) => {
-            dispatch({
-              type: "EDIT_SPANS",
-              elementId: editingElement.id,
-              spans,
-            });
-            setEditingTextId(null);
-          }}
-          onCancel={() => setEditingTextId(null)}
-        />
-      )}
     </div>
   );
 }
@@ -122,9 +90,7 @@ interface ElementHitAreaProps {
   scale: number;
   canvas: { w: number; h: number };
   isSelected: boolean;
-  isEditing: boolean;
   dispatch: (action: SlideEditorAction) => void;
-  onEnterTextEdit: () => void;
 }
 
 function ElementHitArea({
@@ -132,18 +98,12 @@ function ElementHitArea({
   scale,
   canvas,
   isSelected,
-  isEditing,
   dispatch,
-  onEnterTextEdit,
 }: ElementHitAreaProps) {
   const [dragging, setDragging] = useState(false);
 
-  const sizeH =
-    element.kind === "text" && element.size.h === "auto" ? 80 : (element.size.h as number);
-
   const handlePointerDown = useCallback(
     (e: RPointerEvent<HTMLDivElement>) => {
-      if (isEditing) return;
       e.stopPropagation();
       if (!isSelected) {
         dispatch({ type: "SELECT", elementId: element.id });
@@ -180,39 +140,20 @@ function ElementHitArea({
       window.addEventListener("pointermove", onMove);
       window.addEventListener("pointerup", onUp);
     },
-    [isSelected, isEditing, dispatch, element.id, element.position, element.size, scale, canvas],
-  );
-
-  const handleDoubleClick = useCallback(
-    (e: RPointerEvent<HTMLDivElement>) => {
-      if (element.kind !== "text") return;
-      e.stopPropagation();
-      onEnterTextEdit();
-    },
-    [element.kind, onEnterTextEdit],
+    [isSelected, dispatch, element.id, element.position, element.size, scale, canvas],
   );
 
   return (
     <div
       data-element-id={element.id}
       onPointerDown={handlePointerDown}
-      onDoubleClick={handleDoubleClick}
       style={{
         position: "absolute",
         left: element.position.x * scale,
         top: element.position.y * scale,
         width: element.size.w * scale,
-        height: sizeH * scale,
-        cursor: isEditing
-          ? "text"
-          : isSelected
-            ? dragging
-              ? "grabbing"
-              : "grab"
-            : "pointer",
-        outline: isSelected && !isEditing ? "none" : undefined,
-        // Hide hit area while editing so Lexical's contenteditable receives clicks
-        pointerEvents: isEditing ? "none" : "auto",
+        height: element.size.h * scale,
+        cursor: isSelected ? (dragging ? "grabbing" : "grab") : "pointer",
       }}
     />
   );
@@ -241,13 +182,10 @@ interface SelectionFrameProps {
 }
 
 function SelectionFrame({ element, scale, canvas, dispatch }: SelectionFrameProps) {
-  const sizeH =
-    element.kind === "text" && element.size.h === "auto" ? 80 : (element.size.h as number);
-
   const left = element.position.x * scale;
   const top = element.position.y * scale;
   const width = element.size.w * scale;
-  const height = sizeH * scale;
+  const height = element.size.h * scale;
 
   const startResize = (e: RPointerEvent<HTMLDivElement>, anchor: ResizeAnchor) => {
     e.stopPropagation();
@@ -257,7 +195,7 @@ function SelectionFrame({ element, scale, canvas, dispatch }: SelectionFrameProp
     const startPointerX = e.clientX;
     const startPointerY = e.clientY;
     const origPos = { ...element.position };
-    const origSize = { w: element.size.w, h: sizeH };
+    const origSize = { ...element.size };
 
     const onMove = (ev: PointerEvent) => {
       const dx = (ev.clientX - startPointerX) / scale;

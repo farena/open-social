@@ -145,25 +145,25 @@ Slides are structured JSON, not HTML. Every slide is { background, elements, not
 { "kind": "image", "src": "/uploads/photo.jpg", "fit": "cover" }
 \`\`\`
 
-### Element kinds (each has id + position + size + kind-specific fields)
+### Element kinds — only TWO
 
-**text** — supports rich runs via spans (each span has its own font/size/weight/color):
+Every element has: \`id\`, \`position: { x, y }\`, \`size: { w, h }\`, optional \`rotation\`, \`opacity\`, \`hidden\`, \`scssStyles\`.
+
+**container** — arbitrary HTML body with scoped CSS. Use this for anything that isn't a raster image: text, decorative shapes, badges, compositions, full-bleed layouts, etc.
+
 \`\`\`json
 {
   "id": "el-1",
-  "kind": "text",
+  "kind": "container",
   "position": { "x": 90, "y": 200 },
-  "size": { "w": 900, "h": "auto" },
-  "alignment": "center",
-  "lineHeight": 1.2,
-  "spans": [
-    { "content": "Hola ", "fontFamily": "Inter", "fontSize": 64, "fontWeight": 700, "color": "#ffffff" },
-    { "content": "mundo", "fontFamily": "Inter", "fontSize": 64, "fontWeight": 700, "color": "${brand.colors.accent}" }
-  ]
+  "size": { "w": 900, "h": 280 },
+  "htmlContent": "<h1 class=\\"title\\">Hola <span class=\\"accent\\">mundo</span></h1>",
+  "scssStyles": "display: flex; align-items: center; justify-content: center;\\n& .title { font-family: 'Inter', sans-serif; font-size: 96px; font-weight: 800; color: #fff; line-height: 1; margin: 0; }\\n& .accent { color: ${brand.colors.accent}; }"
 }
 \`\`\`
 
-**image**:
+**image** — a single raster image:
+
 \`\`\`json
 {
   "id": "el-2",
@@ -171,30 +171,27 @@ Slides are structured JSON, not HTML. Every slide is { background, elements, not
   "position": { "x": 100, "y": 100 },
   "size": { "w": 400, "h": 400 },
   "src": "/uploads/logo.png",
-  "fit": "cover",
-  "borderRadius": 16
+  "scssStyles": "border-radius: 16px; overflow: hidden;\\n& img { object-fit: cover; }"
 }
 \`\`\`
 
-**shape** — rect or circle, with solid color or gradient fill:
-\`\`\`json
-{
-  "id": "el-3",
-  "kind": "shape",
-  "position": { "x": 0, "y": 0 },
-  "size": { "w": 200, "h": 200 },
-  "shape": "circle",
-  "fill": { "kind": "solid", "color": "${brand.colors.primary}" },
-  "borderRadius": 100
-}
-\`\`\`
+### scssStyles — native CSS with nesting
+
+\`scssStyles\` is plain CSS (no compiler), scoped to the element via an injected \`<style>[data-element-id="ID"] { ... }</style>\` block. You can use:
+- Native CSS nesting with \`&\` (e.g. \`& h1 { ... }\`, \`& .pill:hover { ... }\`)
+- CSS custom properties (\`--name: value;\` + \`var(--name)\`)
+- All standard CSS — gradients, shadows, filters, transforms, blends, grid, flex, etc.
+
+Authoring tips:
+- Use semantic class names inside \`htmlContent\` (\`.title\`, \`.kicker\`, \`.cta\`) and target them with nested rules in \`scssStyles\`.
+- The wrapper itself is the scope, so top-level declarations apply to the wrapper div (e.g. \`background: navy;\` paints the whole container).
+- Iframe sandbox blocks JS, so \`<script>\` inside \`htmlContent\` won't execute. Don't bother with it.
 
 ### Modeling guide
-- Every visible piece on a slide is one element. Don't pack multiple texts into one element with newlines unless they share styling.
-- Use multiple text elements for things with distinct styling (label + headline + caption are usually 3 elements).
-- Element order in \`elements\` defines z-index — later items render on top.
 - Coordinates are absolute pixels in canvas space (0..${dimensions.width} horizontal, 0..${dimensions.height} vertical).
-- Use \`size.h: "auto"\` on text elements when you want the height to follow content.
+- Element order in \`elements\` defines z-index — later items render on top.
+- Prefer ONE container per visual region (a headline + its kicker can be a single container with two child tags styled via nested CSS) instead of N tiny elements.
+- The container's \`size\` is the wrapper box — your \`htmlContent\` lays out within it via flex/grid in \`scssStyles\`.
 
 ## API — Use curl for all operations
 
@@ -204,7 +201,14 @@ curl -s -X POST http://localhost:3000/api/carousels/${carousel?.id || "{ID}"}/sl
   -d '{
     "background": { "kind": "gradient", "angle": 135, "stops": [{ "offset": 0, "color": "#2fd9b0" }, { "offset": 1, "color": "#00c4ee" }] },
     "elements": [
-      { "id": "t1", "kind": "text", "position": { "x": 90, "y": 240 }, "size": { "w": 900, "h": "auto" }, "alignment": "left", "lineHeight": 1.1, "spans": [{ "content": "Hook que detiene el scroll", "fontFamily": "Inter", "fontSize": 84, "fontWeight": 800, "color": "#ffffff" }] }
+      {
+        "id": "hook",
+        "kind": "container",
+        "position": { "x": 90, "y": 240 },
+        "size": { "w": 900, "h": 320 },
+        "htmlContent": "<h1>Hook que detiene el scroll</h1>",
+        "scssStyles": "display: flex; align-items: center; & h1 { font-family: Inter, sans-serif; font-size: 84px; font-weight: 800; color: #fff; line-height: 1; margin: 0; }"
+      }
     ],
     "notes": "Slide 1 - hook"
   }'
@@ -218,7 +222,7 @@ curl -s -X PUT http://localhost:3000/api/carousels/${carousel?.id || "{ID}"}/sli
 # Add one element to a slide
 curl -s -X POST http://localhost:3000/api/carousels/${carousel?.id || "{ID}"}/slides/{SLIDE_ID}/elements \\
   -H "Content-Type: application/json" \\
-  -d '{ "kind": "text", "position": {...}, ... }'
+  -d '{ "kind": "container", "position": {...}, "size": {...}, "htmlContent": "...", "scssStyles": "..." }'
 
 # Patch one element (fields to change only)
 curl -s -X PATCH http://localhost:3000/api/carousels/${carousel?.id || "{ID}"}/slides/{SLIDE_ID}/elements/{ELEMENT_ID} \\
@@ -252,12 +256,11 @@ curl -s -X POST http://localhost:3000/api/style-presets \\
 
 ## Slide composition rules (CRITICAL)
 
-1. NEVER write HTML. The body is the structured JSON above.
-2. NEVER include <script>, <style>, <iframe>, or any HTML tag in any field. Plain text only inside \`spans[].content\`.
-3. Coordinates must keep the visible portion of every element fully or mostly inside the canvas (a few px overflow is OK for design, but most content should be inside the safe area: 60-80px from each edge).
-4. Use Google Font family names that exist on Google Fonts (e.g., "Inter", "Playfair Display", "Montserrat"). The renderer auto-loads them.
+1. The body is structured JSON. \`htmlContent\` is HTML inside a single container element, NOT a full slide HTML.
+2. Do NOT include \`<script>\` or \`<iframe>\` in \`htmlContent\` (sandbox blocks JS anyway).
+3. Coordinates must keep the visible portion of every element fully or mostly inside the canvas (some overflow is OK for design, but most content should be inside the safe area: 60-80px from each edge).
+4. Use Google Font family names that exist on Google Fonts inside scssStyles (e.g., \`font-family: 'Inter', sans-serif\`). The renderer auto-loads them.
 5. Image src must be a /uploads/{filename} path you've been told about (in Assets above) or the brand logo. Don't invent paths.
-6. Sandbox blocks JS, but you don't need any anyway.
 
 ## Design intelligence
 

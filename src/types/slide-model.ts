@@ -6,6 +6,15 @@
  * Coordinates are in canvas pixels (e.g. 0..1080 horizontal, 0..1350 vertical
  * for 4:5). The editor overlay never reads the iframe DOM — it computes hit
  * targets, drag deltas and resize anchors from this model.
+ *
+ * Two element kinds:
+ *   - container: arbitrary HTML body with scoped CSS (covers text, shapes,
+ *     decorative compositions — anything that's not a raster image)
+ *   - image:     a single <img>, with scoped CSS for fit/radius/filters/etc.
+ *
+ * `scssStyles` is treated as native CSS with nesting (`&` selectors). It is
+ * scoped to the element via an injected `<style>[data-element-id="ID"] { … }</style>`
+ * block, so authors can write nested rules targeting children of htmlContent.
  */
 
 export type Hex = string;
@@ -19,14 +28,6 @@ export interface Size {
   w: number;
   h: number;
 }
-
-export type FontWeight = 300 | 400 | 500 | 600 | 700 | 800 | 900;
-
-export type TextAlignment = "left" | "center" | "right";
-
-export type ImageFit = "cover" | "contain";
-
-export type ShapeKind = "rect" | "circle";
 
 export interface SolidFill {
   kind: "solid";
@@ -44,12 +45,10 @@ export interface GradientFill {
   stops: GradientStop[];
 }
 
-export type ElementFill = SolidFill | GradientFill;
-
 export interface ImageBackground {
   kind: "image";
   src: string;
-  fit: ImageFit;
+  fit: "cover" | "contain";
 }
 
 export type BackgroundElement = SolidFill | GradientFill | ImageBackground;
@@ -57,52 +56,39 @@ export type BackgroundElement = SolidFill | GradientFill | ImageBackground;
 export interface ElementBase {
   id: string;
   position: Position;
+  size: Size;
   rotation?: number;
   opacity?: number;
+  hidden?: boolean;
+  /**
+   * Native CSS (with nesting via `&`) scoped to this element. Injected as a
+   * `<style>[data-element-id="ID"] { ... }</style>` block, so nested selectors
+   * target descendants of `htmlContent` (or the `<img>` for image elements).
+   *
+   * Example (container):
+   *   color: white; background: navy;
+   *   & h1 { font-size: 96px; font-weight: 900; }
+   *   & .pill { display: inline-block; padding: 6px 16px; border-radius: 999px; }
+   */
+  scssStyles?: string;
 }
 
-export interface Span {
-  content: string;
-  fontFamily: string;
-  fontSize: number;
-  fontWeight: FontWeight;
-  color: Hex;
-  italic?: boolean;
-  underline?: boolean;
-}
-
-export interface TextElement extends ElementBase {
-  kind: "text";
-  size: { w: number; h: number | "auto" };
-  alignment: TextAlignment;
-  lineHeight: number;
-  letterSpacing?: number;
-  spans: Span[];
+export interface ContainerElement extends ElementBase {
+  kind: "container";
+  /**
+   * Body HTML rendered inside the element wrapper. May contain any markup
+   * (no `<script>` — iframe sandbox blocks JS execution). Use class names and
+   * data attributes that `scssStyles` targets via nested rules.
+   */
+  htmlContent: string;
 }
 
 export interface ImageElement extends ElementBase {
   kind: "image";
-  size: Size;
   src: string;
-  fit: ImageFit;
-  borderRadius?: number;
 }
 
-export interface ShapeBorder {
-  width: number;
-  color: Hex;
-}
-
-export interface ShapeElement extends ElementBase {
-  kind: "shape";
-  size: Size;
-  shape: ShapeKind;
-  fill: ElementFill;
-  border?: ShapeBorder;
-  borderRadius?: number;
-}
-
-export type SlideElement = TextElement | ImageElement | ShapeElement;
+export type SlideElement = ContainerElement | ImageElement;
 
 export type SlideElementKind = SlideElement["kind"];
 

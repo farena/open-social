@@ -4,7 +4,6 @@ import { useEffect, useReducer, useRef, useCallback } from "react";
 import type {
   BackgroundElement,
   SlideElement,
-  Span,
 } from "@/types/slide-model";
 import type { Slide } from "@/types/carousel";
 
@@ -35,11 +34,12 @@ export type SlideEditorAction =
       size: { w: number; h: number };
     }
   | { type: "PATCH_ELEMENT"; elementId: string; patch: Partial<SlideElement> }
-  | { type: "EDIT_SPANS"; elementId: string; spans: Span[] }
   | { type: "ADD_ELEMENT"; element: SlideElement }
   | { type: "DELETE_ELEMENT"; elementId: string }
   | { type: "DUPLICATE_ELEMENT"; elementId: string; newElement: SlideElement }
   | { type: "REORDER_Z"; elementId: string; direction: "up" | "down" | "top" | "bottom" }
+  | { type: "MOVE_TO_INDEX"; elementId: string; toIndex: number }
+  | { type: "TOGGLE_VISIBILITY"; elementId: string }
   | { type: "SET_BACKGROUND"; background: BackgroundElement }
   | { type: "SET_SLIDE"; slide: Slide };
 
@@ -89,18 +89,6 @@ function reducer(
           elements: state.slide.elements.map((el) =>
             el.id === action.elementId
               ? ({ ...el, ...action.patch, id: el.id, kind: el.kind } as SlideElement)
-              : el,
-          ),
-        },
-      };
-    case "EDIT_SPANS":
-      return {
-        ...state,
-        slide: {
-          ...state.slide,
-          elements: state.slide.elements.map((el) =>
-            el.id === action.elementId && el.kind === "text"
-              ? { ...el, spans: action.spans }
               : el,
           ),
         },
@@ -155,6 +143,29 @@ function reducer(
       })();
       els.splice(target, 0, el);
       return { ...state, slide: { ...state.slide, elements: els } };
+    }
+    case "MOVE_TO_INDEX": {
+      const els = [...state.slide.elements];
+      const idx = els.findIndex((el) => el.id === action.elementId);
+      if (idx === -1) return state;
+      const clamped = Math.max(0, Math.min(els.length - 1, action.toIndex));
+      if (clamped === idx) return state;
+      const [el] = els.splice(idx, 1);
+      els.splice(clamped, 0, el);
+      return { ...state, slide: { ...state.slide, elements: els } };
+    }
+    case "TOGGLE_VISIBILITY": {
+      return {
+        ...state,
+        slide: {
+          ...state.slide,
+          elements: state.slide.elements.map((el) =>
+            el.id === action.elementId
+              ? ({ ...el, hidden: !el.hidden } as SlideElement)
+              : el,
+          ),
+        },
+      };
     }
   }
 }
