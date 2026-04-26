@@ -1,6 +1,6 @@
 "use client";
 
-import { Bookmark, Grid3X3, Maximize2, Trash2 } from "lucide-react";
+import { Bookmark, Eye, Grid3X3, Maximize2, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AspectRatioSelector } from "./AspectRatioSelector";
 import { ExportButton } from "./ExportButton";
@@ -18,6 +18,7 @@ interface ToolbarProps {
   onToggleChat: () => void;
   contentItemId: string;
   slideCount: number;
+  onViewDetails?: () => void;
 }
 
 /**
@@ -36,6 +37,7 @@ export function Toolbar({
   onToggleChat,
   contentItemId,
   slideCount,
+  onViewDetails,
 }: ToolbarProps) {
   return (
     <div className="h-11 border-b border-border bg-surface flex items-center px-4 gap-3 shrink-0">
@@ -84,6 +86,19 @@ export function Toolbar({
       >
         <Trash2 className="h-3.5 w-3.5" />
       </Button>
+      {onViewDetails && (
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={onViewDetails}
+          className="text-muted-foreground gap-1.5"
+          aria-label="View details"
+          title="View content details"
+        >
+          <Eye className="h-3.5 w-3.5" />
+          <span className="text-xs">Details</span>
+        </Button>
+      )}
       <button
         onClick={onToggleChat}
         className="text-xs text-muted-foreground hover:text-foreground transition-colors px-3 py-1.5 rounded-md border border-border hover:bg-muted"

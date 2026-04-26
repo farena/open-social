@@ -13,6 +13,7 @@ import { SlideFilmstrip } from "@/components/editor/SlideFilmstrip";
 import { CaptionPanel } from "@/components/editor/CaptionPanel";
 import { FullscreenPreview } from "@/components/editor/FullscreenPreview";
 import { ContentItemDetailIdea } from "@/components/content/ContentItemDetailIdea";
+import { ContentItemDetailModal } from "@/components/content/ContentItemDetailModal";
 import type { ContentItem } from "@/types/content-item";
 import type { AspectRatio } from "@/types/carousel";
 
@@ -32,6 +33,7 @@ export default function ContentItemPage({ params }: PageProps) {
   const [isGenerating, setIsGenerating] = useState(false);
   const [showSafeZones, setShowSafeZones] = useState(false);
   const [showFullscreen, setShowFullscreen] = useState(false);
+  const [showDetailsModal, setShowDetailsModal] = useState(false);
 
   const [confirmState, setConfirmState] = useState<{
     open: boolean;
@@ -260,6 +262,7 @@ export default function ContentItemPage({ params }: PageProps) {
       onToggleChat={() => setChatOpen(!chatOpen)}
       contentItemId={id}
       slideCount={item.slides.length}
+      onViewDetails={item.state === "generated" ? () => setShowDetailsModal(true) : undefined}
     />
   );
 
@@ -303,6 +306,13 @@ export default function ContentItemPage({ params }: PageProps) {
         confirmLabel="Delete"
         variant="destructive"
         onConfirm={confirmState.onConfirm}
+      />
+
+      <ContentItemDetailModal
+        open={showDetailsModal}
+        onOpenChange={setShowDetailsModal}
+        contentItem={item}
+        onSaved={(updated) => setItem(updated)}
       />
 
       <div className="flex-1 flex min-h-0 overflow-hidden" id="main-editor-area">

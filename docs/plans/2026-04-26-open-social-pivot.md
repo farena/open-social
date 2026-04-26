@@ -253,13 +253,13 @@ Each task targets <250 LOC and has a Playwright or curl validation step before m
 - Modify: `src/components/editor/Toolbar.tsx`
 - Modify: `src/app/content/[id]/page.tsx`
 
-- [ ] **Step 1: Modal component**
+- [x] **Step 1: Modal component**
   - Same form fields as `ContentItemDetailIdea` but in a Radix Dialog
   - Save button → PATCH → close modal + bubble updated item back up
-- [ ] **Step 2: Add `onViewDetails?: () => void` prop to `Toolbar`** — render a "View details" button with `Eye` icon when prop is provided
-- [ ] **Step 3: Page wires modal state + passes `onViewDetails` only in generated state**
-- [ ] **Step 4: Playwright** — open a generated item, click "View details", edit hook, save, confirm persisted
-- [ ] **Step 5: Commit** — `feat(content): view details modal in editor toolbar`
+- [x] **Step 2: Add `onViewDetails?: () => void` prop to `Toolbar`** — render a "View details" button with `Eye` icon when prop is provided
+- [x] **Step 3: Page wires modal state + passes `onViewDetails` only in generated state**
+- [~] **Step 4: Playwright** — skipped (no dev server) — code-only verification
+- [x] **Step 5: Commit** — `feat(content): view details modal in editor toolbar`
 
 ---
 
