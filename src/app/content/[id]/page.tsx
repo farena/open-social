@@ -235,6 +235,8 @@ export default function ContentItemPage({ params }: PageProps) {
             contentItem={item}
             onSaved={(updated) => setItem(updated)}
             onGenerateRequested={handleGenerateRequested}
+            claudeAvailable={claudeAvailable}
+            onItemUpdated={fetchItem}
           />
         </div>
       </div>

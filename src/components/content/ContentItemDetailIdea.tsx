@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Save, Check, Plus, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { ContentIdeaChat } from "@/components/content/ContentIdeaChat";
 import type { ContentItem, ContentItemType } from "@/types/content-item";
 import { cn } from "@/lib/utils";
 
@@ -11,6 +12,8 @@ interface Props {
   contentItem: ContentItem;
   onSaved: (updated: ContentItem) => void;
   onGenerateRequested: () => void;
+  claudeAvailable?: boolean;
+  onItemUpdated?: () => void;
 }
 
 const TYPE_OPTIONS: { value: ContentItemType; label: string }[] = [
@@ -44,6 +47,8 @@ export function ContentItemDetailIdea({
   contentItem,
   onSaved,
   onGenerateRequested,
+  claudeAvailable = true,
+  onItemUpdated,
 }: Props) {
   const [hook, setHook] = useState(contentItem.hook);
   const [type, setType] = useState<ContentItemType>(contentItem.type);
@@ -88,38 +93,49 @@ export function ContentItemDetailIdea({
   };
 
   return (
-    <div className="h-full flex flex-col">
-      {/* Inner top bar */}
-      <div className="px-6 py-4 border-b border-border bg-surface flex items-center justify-between shrink-0">
-        <div>
-          <h2 className="text-base font-semibold">Edit idea</h2>
-          <p className="text-xs text-muted-foreground">
-            Fill in the details before generating content.
-          </p>
-        </div>
-        <Button
-          variant="accent"
-          size="sm"
-          onClick={handleSave}
-          disabled={saving}
-        >
-          {savedFlash ? (
-            <>
-              <Check className="h-4 w-4" />
-              Saved
-            </>
-          ) : (
-            <>
-              <Save className="h-4 w-4" />
-              {saving ? "Saving..." : "Save"}
-            </>
-          )}
-        </Button>
+    <div className="h-full flex min-h-0 overflow-hidden">
+      {/* Left rail — chat */}
+      <div className="w-80 shrink-0 border-r border-border flex flex-col bg-surface">
+        <ContentIdeaChat
+          contentItemId={contentItem.id}
+          claudeAvailable={claudeAvailable}
+          onItemUpdated={onItemUpdated}
+        />
       </div>
 
-      {/* Scrollable form */}
-      <div className="flex-1 overflow-y-auto px-6 py-6">
-        <div className="max-w-[600px] mx-auto space-y-6">
+      {/* Right panel — form */}
+      <div className="flex-1 min-w-0 flex flex-col">
+        {/* Inner top bar */}
+        <div className="px-6 py-4 border-b border-border bg-surface flex items-center justify-between shrink-0">
+          <div>
+            <h2 className="text-base font-semibold">Edit idea</h2>
+            <p className="text-xs text-muted-foreground">
+              Fill in the details before generating content.
+            </p>
+          </div>
+          <Button
+            variant="accent"
+            size="sm"
+            onClick={handleSave}
+            disabled={saving}
+          >
+            {savedFlash ? (
+              <>
+                <Check className="h-4 w-4" />
+                Saved
+              </>
+            ) : (
+              <>
+                <Save className="h-4 w-4" />
+                {saving ? "Saving..." : "Save"}
+              </>
+            )}
+          </Button>
+        </div>
+
+        {/* Scrollable form */}
+        <div className="flex-1 overflow-y-auto px-6 py-6">
+          <div className="max-w-[600px] mx-auto space-y-6">
           {/* Hook */}
           <Field label="Hook" hint="Opening line that grabs attention. (required)">
             <Input
@@ -230,26 +246,27 @@ export function ContentItemDetailIdea({
               className={textareaClass}
             />
           </Field>
+          </div>
         </div>
-      </div>
 
-      {/* Sticky footer — Generate button */}
-      <div className="shrink-0 border-t border-border bg-surface px-6 py-4">
-        <div className="max-w-[600px] mx-auto">
-          <Button
-            variant="accent"
-            size="lg"
-            className="w-full"
-            disabled={!canGenerate}
-            onClick={onGenerateRequested}
-          >
-            Generate Content
-          </Button>
-          {!canGenerate && (
-            <p className="text-xs text-muted-foreground text-center mt-2">
-              Fill in Hook and Body idea to unlock generation.
-            </p>
-          )}
+        {/* Sticky footer — Generate button */}
+        <div className="shrink-0 border-t border-border bg-surface px-6 py-4">
+          <div className="max-w-[600px] mx-auto">
+            <Button
+              variant="accent"
+              size="lg"
+              className="w-full"
+              disabled={!canGenerate}
+              onClick={onGenerateRequested}
+            >
+              Generate Content
+            </Button>
+            {!canGenerate && (
+              <p className="text-xs text-muted-foreground text-center mt-2">
+                Fill in Hook and Body idea to unlock generation.
+              </p>
+            )}
+          </div>
         </div>
       </div>
     </div>

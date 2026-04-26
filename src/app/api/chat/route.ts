@@ -5,10 +5,12 @@ import { getClaudePath, isClaudeAvailable } from "@/lib/claude-path";
 import { buildSystemPrompt } from "@/lib/chat-system-prompt";
 import { buildContextChatSystemPrompt } from "@/lib/context-chat-system-prompt";
 import { buildIdeationSystemPrompt } from "@/lib/ideation-system-prompt";
+import { buildContentIdeaSystemPrompt } from "@/lib/content-idea-system-prompt";
 import { listAssets } from "@/lib/assets";
 import { getBrand } from "@/lib/brand";
 import { getBusinessContext } from "@/lib/business-context";
 import { getCarousel } from "@/lib/carousels";
+import { getContentItem } from "@/lib/content-items";
 import { getPreset } from "@/lib/style-presets";
 
 export const runtime = "nodejs";
@@ -30,8 +32,9 @@ export async function POST(request: NextRequest) {
     message?: string;
     sessionId?: string;
     carouselId?: string;
+    contentItemId?: string;
     stylePresetId?: string;
-    mode?: "content-generation" | "carousel" | "business-context" | "ideation";
+    mode?: "content-generation" | "carousel" | "business-context" | "ideation" | "content-idea";
   };
   try {
     body = await request.json();
@@ -39,7 +42,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
-  const { message, sessionId, carouselId, stylePresetId, mode } = body;
+  const { message, sessionId, carouselId, contentItemId, stylePresetId, mode } = body;
 
   if (
     !message ||
@@ -61,6 +64,26 @@ export async function POST(request: NextRequest) {
     const [brand, ctx] = await Promise.all([getBrand(), getBusinessContext()]);
     systemPrompt = buildIdeationSystemPrompt(brand, ctx);
     agentName = "ideation-chat";
+  } else if (mode === "content-idea") {
+    if (!contentItemId) {
+      return NextResponse.json(
+        { error: "contentItemId is required for mode 'content-idea'" },
+        { status: 400 }
+      );
+    }
+    const [brand, ctx, item] = await Promise.all([
+      getBrand(),
+      getBusinessContext(),
+      getContentItem(contentItemId),
+    ]);
+    if (!item) {
+      return NextResponse.json(
+        { error: "Content item not found" },
+        { status: 404 }
+      );
+    }
+    systemPrompt = buildContentIdeaSystemPrompt(item, brand, ctx);
+    agentName = "content-idea-chat";
   } else {
     // "content-generation" is the canonical mode.
     // "carousel" is a deprecated alias kept for backwards compatibility with
