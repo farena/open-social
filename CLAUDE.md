@@ -47,6 +47,18 @@ All at localhost:3000:
 - iframe slides always use `sandbox=""` attribute (no JavaScript execution)
 - The Claude subprocess gets `--allowedTools Bash WebFetch` and uses curl to call local API routes
 
+## Wiki-first workflow
+
+Before any non-trivial change (new feature, refactor, change to slide pipeline / chat / export / data layer / API contracts), **consult the wiki first**:
+
+1. Read `wiki/index.md` to find candidate pages for the area you're touching.
+2. Read the relevant `pages/entities/*` and `pages/concepts/*` to understand the *why* (decisions, constraints, prior incidents) — code is the *what*, the wiki is the *why*.
+3. Follow `code_refs` in those pages to the canonical source files before editing.
+4. If the wiki has no page for the area, say so explicitly and proceed by reading code; **do not invent history**.
+5. After landing a change that introduces a new decision, supersedes an old one, or resolves an incident, offer to ingest it into the wiki (`/ingest` or trigger the `project-wiki` skill).
+
+Skip the wiki step only for: typo fixes, dependency bumps, copy-only edits, isolated bug fixes with obvious local cause. When in doubt, check the wiki — it's cheap.
+
 ## Instagram Dimensions
 
 - 1:1 = 1080x1080 (square)
