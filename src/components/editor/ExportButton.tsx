@@ -75,8 +75,10 @@ export function ExportButton({ contentItemId, slideCount }: ExportButtonProps) {
         const a = document.createElement("a");
         a.href = url;
         a.download = `carousel-${contentItemId}.zip`;
+        document.body.appendChild(a);
         a.click();
-        URL.revokeObjectURL(url);
+        a.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
         setDone(true);
       }
     } catch (error) {

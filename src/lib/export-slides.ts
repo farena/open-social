@@ -22,12 +22,20 @@ async function getBrowser(): Promise<Browser> {
   if (!browser || !browser.isConnected()) {
     browser = await puppeteer.launch({
       headless: true,
-      args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-gpu"],
+      protocolTimeout: 300_000,
+      args: [
+        "--no-sandbox",
+        "--disable-setuid-sandbox",
+        "--disable-gpu",
+        "--disable-dev-shm-usage",
+      ],
     });
     exportCount = 0;
   }
   return browser;
 }
+
+const HEAVY_FONT_REGEX = /Material Symbols /i;
 
 /**
  * Inline all image references in slide HTML.
@@ -90,24 +98,19 @@ export async function exportSlide(
 
   try {
     await page.setViewport({ width, height, deviceScaleFactor: 1 });
-    await page.setContent(fullHtml, { waitUntil: "domcontentloaded", timeout: 15000 });
+    await page.setContent(fullHtml, { waitUntil: "domcontentloaded", timeout: 30000 });
 
-    // Wait for fonts to be ready
+    // Wait for fonts that are actually in use to be ready. Avoid iterating
+    // every FontFace — Material Symbols ships hundreds of unicode-range faces
+    // and forcing them all to "loaded" stalls the renderer.
     await page
-      .waitForFunction(
-        () =>
-          document.fonts.ready.then(() =>
-            [...document.fonts].every((f) => f.status === "loaded")
-          ),
-        { timeout: 10000 }
-      )
-      .catch(() => {
-        // Font loading timeout — proceed with whatever loaded
-      });
+      .evaluate(() => document.fonts.ready)
+      .catch(() => {});
 
     const screenshotBuffer = await page.screenshot({
       type: "png",
       clip: { x: 0, y: 0, width, height },
+      captureBeyondViewport: false,
     });
 
     exportCount++;
@@ -134,10 +137,18 @@ export async function exportAllSlides(
   onProgress?: (current: number, total: number) => void
 ): Promise<{ name: string; buffer: Buffer }[]> {
   const results: { name: string; buffer: Buffer }[] = [];
-  const CONCURRENCY = 3;
 
-  for (let i = 0; i < slides.length; i += CONCURRENCY) {
-    const batch = slides.slice(i, i + CONCURRENCY);
+  // Drop concurrency to 1 when slides reference heavy icon fonts. Each page
+  // ships several MB of inlined @font-face data and parallel pages thrash the
+  // renderer enough to time out captureScreenshot.
+  const usesHeavyFont = slides.some((s) => {
+    const blob = JSON.stringify(s);
+    return HEAVY_FONT_REGEX.test(blob);
+  });
+  const concurrency = usesHeavyFont ? 1 : 3;
+
+  for (let i = 0; i < slides.length; i += concurrency) {
+    const batch = slides.slice(i, i + concurrency);
     const batchResults = await Promise.all(
       batch.map(async (slide, batchIdx) => {
         const idx = i + batchIdx;
