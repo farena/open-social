@@ -5,7 +5,13 @@ import { DEFAULT_ASPECT_RATIO_FOR_TYPE, MAX_SLIDES } from "@/types/content-item"
 import type { Slide, ReferenceImage } from "@/types/carousel";
 import { MAX_VERSIONS } from "@/types/carousel";
 import type { Asset } from "@/types/asset";
-import type { BackgroundElement, SlideElement, SlideSnapshot } from "@/types/slide-model";
+import type {
+  BackgroundElement,
+  Position,
+  Size,
+  SlideElement,
+  SlideSnapshot,
+} from "@/types/slide-model";
 import {
   newContentItemInputSchema,
   contentItemPatchSchema,
@@ -240,6 +246,108 @@ export async function undoSlide(
   } else {
     delete slide.legacyHtml;
   }
+  item.updatedAt = now();
+  await save(data);
+  return item;
+}
+
+export type SlideElementPatch = Partial<{
+  position: Position;
+  size: Size;
+  rotation: number;
+  opacity: number;
+  hidden: boolean;
+  scssStyles: string;
+  htmlContent: string;
+  src: string;
+}>;
+
+export async function addSlideElement(
+  itemId: string,
+  slideId: string,
+  element: SlideElement
+): Promise<{ item: ContentItem; element: SlideElement } | null> {
+  const data = await load();
+  const item = data.contentItems.find((c) => c.id === itemId);
+  if (!item) return null;
+  const slide = item.slides.find((s) => s.id === slideId);
+  if (!slide) return null;
+
+  pushSnapshot(slide);
+  slide.elements.push(element);
+  item.updatedAt = now();
+  await save(data);
+  return { item, element };
+}
+
+export async function updateSlideElement(
+  itemId: string,
+  slideId: string,
+  elementId: string,
+  patch: SlideElementPatch
+): Promise<{ item: ContentItem; element: SlideElement } | null> {
+  const data = await load();
+  const item = data.contentItems.find((c) => c.id === itemId);
+  if (!item) return null;
+  const slide = item.slides.find((s) => s.id === slideId);
+  if (!slide) return null;
+  const element = slide.elements.find((e) => e.id === elementId);
+  if (!element) return null;
+
+  pushSnapshot(slide);
+
+  if (patch.position !== undefined) element.position = patch.position;
+  if (patch.size !== undefined) element.size = patch.size;
+  if (patch.rotation !== undefined) element.rotation = patch.rotation;
+  if (patch.opacity !== undefined) element.opacity = patch.opacity;
+  if (patch.hidden !== undefined) element.hidden = patch.hidden;
+  if (patch.scssStyles !== undefined) element.scssStyles = patch.scssStyles;
+
+  if (element.kind === "container" && patch.htmlContent !== undefined) {
+    element.htmlContent = patch.htmlContent;
+  }
+  if (element.kind === "image" && patch.src !== undefined) {
+    element.src = patch.src;
+  }
+
+  item.updatedAt = now();
+  await save(data);
+  return { item, element };
+}
+
+export async function removeSlideElement(
+  itemId: string,
+  slideId: string,
+  elementId: string
+): Promise<ContentItem | null> {
+  const data = await load();
+  const item = data.contentItems.find((c) => c.id === itemId);
+  if (!item) return null;
+  const slide = item.slides.find((s) => s.id === slideId);
+  if (!slide) return null;
+  const idx = slide.elements.findIndex((e) => e.id === elementId);
+  if (idx === -1) return null;
+
+  pushSnapshot(slide);
+  slide.elements.splice(idx, 1);
+  item.updatedAt = now();
+  await save(data);
+  return item;
+}
+
+export async function updateSlideBackground(
+  itemId: string,
+  slideId: string,
+  background: BackgroundElement
+): Promise<ContentItem | null> {
+  const data = await load();
+  const item = data.contentItems.find((c) => c.id === itemId);
+  if (!item) return null;
+  const slide = item.slides.find((s) => s.id === slideId);
+  if (!slide) return null;
+
+  pushSnapshot(slide);
+  slide.background = background;
   item.updatedAt = now();
   await save(data);
   return item;

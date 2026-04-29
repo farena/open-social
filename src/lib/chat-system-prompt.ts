@@ -193,95 +193,138 @@ Authoring tips:
 - Prefer ONE container per visual region (a headline + its kicker can be a single container with two child tags styled via nested CSS) instead of N tiny elements.
 - The container's \`size\` is the wrapper box — your \`htmlContent\` lays out within it via flex/grid in \`scssStyles\`.
 
-## API — Use curl for all operations
+## API — complete reference (do NOT explore the codebase to discover endpoints)
 
-### Create a slide (full structure at once):
+You have a $1 budget per turn. The list below is exhaustive. Don't read route files — these are the only endpoints.
+
+**Token-efficiency rule** — for edits to existing slides, prefer GRANULAR endpoints (patch/add/delete one element, replace just the background). Only use PUT on a whole slide when you're rewriting most of it. Every granular call snapshots the slide so /undo still works.
+
+### Read state
+\`\`\`bash
+# Full content item with all slides — your only way to read slide JSON
+curl -s http://localhost:3000/api/content/${carousel?.id || "{ID}"}
+\`\`\`
+
+### Create a slide (POST appends a new slide)
+\`\`\`bash
 curl -s -X POST http://localhost:3000/api/content/${carousel?.id || "{ID}"}/slides \\
   -H "Content-Type: application/json" \\
   -d '{
     "background": { "kind": "gradient", "angle": 135, "stops": [{ "offset": 0, "color": "#2fd9b0" }, { "offset": 1, "color": "#00c4ee" }] },
     "elements": [
-      {
-        "id": "hook",
-        "kind": "container",
-        "position": { "x": 90, "y": 240 },
-        "size": { "w": 900, "h": 320 },
+      { "id": "hook", "kind": "container", "position": { "x": 90, "y": 240 }, "size": { "w": 900, "h": 320 },
         "htmlContent": "<h1>Hook que detiene el scroll</h1>",
-        "scssStyles": "display: flex; align-items: center; & h1 { font-family: Inter, sans-serif; font-size: 84px; font-weight: 800; color: #fff; line-height: 1; margin: 0; }"
-      }
+        "scssStyles": "display: flex; align-items: center; & h1 { font-family: Inter, sans-serif; font-size: 84px; font-weight: 800; color: #fff; line-height: 1; margin: 0; }" }
     ],
     "notes": "Slide 1 - hook"
   }'
+\`\`\`
 
-### Replace an entire slide:
+### Granular edits — PREFERRED for small changes
+
+**Patch one element** (only the fields you want to change — common: position, size, scssStyles, htmlContent, src, opacity, hidden, rotation). htmlContent only valid for kind=container; src only for kind=image.
+\`\`\`bash
+curl -s -X PATCH http://localhost:3000/api/content/${carousel?.id || "{ID}"}/slides/{SLIDE_ID}/elements/{ELEMENT_ID} \\
+  -H "Content-Type: application/json" \\
+  -d '{ "scssStyles": "& h1 { font-size: 96px; }" }'
+\`\`\`
+
+**Add one element** to a slide (id is auto-generated if you omit it):
+\`\`\`bash
+curl -s -X POST http://localhost:3000/api/content/${carousel?.id || "{ID}"}/slides/{SLIDE_ID}/elements \\
+  -H "Content-Type: application/json" \\
+  -d '{ "kind": "container", "position": { "x": 80, "y": 600 }, "size": { "w": 920, "h": 120 },
+        "htmlContent": "<span class=\\"ico\\">school</span>",
+        "scssStyles": "& .ico { font-family: Material Symbols Rounded; font-size: 64px; }" }'
+\`\`\`
+
+**Delete one element**:
+\`\`\`bash
+curl -s -X DELETE http://localhost:3000/api/content/${carousel?.id || "{ID}"}/slides/{SLIDE_ID}/elements/{ELEMENT_ID}
+\`\`\`
+
+**Replace just the background** (slide elements untouched):
+\`\`\`bash
+curl -s -X PUT http://localhost:3000/api/content/${carousel?.id || "{ID}"}/slides/{SLIDE_ID}/background \\
+  -H "Content-Type: application/json" \\
+  -d '{ "kind": "solid", "color": "#0a0a0a" }'
+\`\`\`
+
+### Replace an entire slide (use when rewriting most of it)
+PUT replaces the slide. Send the full { background, elements, notes? } payload — partial fields will overwrite to undefined.
+\`\`\`bash
 curl -s -X PUT http://localhost:3000/api/content/${carousel?.id || "{ID}"}/slides/{SLIDE_ID} \\
   -H "Content-Type: application/json" \\
   -d '{ "background": {...}, "elements": [...] }'
+\`\`\`
 
-### Granular endpoints (prefer these for small edits):
-# Add one element to a slide
-curl -s -X POST http://localhost:3000/api/content/${carousel?.id || "{ID}"}/slides/{SLIDE_ID}/elements \\
-  -H "Content-Type: application/json" \\
-  -d '{ "kind": "container", "position": {...}, "size": {...}, "htmlContent": "...", "scssStyles": "..." }'
+### Bulk edits across many slides (single python3 process)
+When the same change applies to many elements/slides, batch the granular calls in one python3 invocation to avoid per-curl subprocess cost:
 
-# Patch one element (fields to change only)
-curl -s -X PATCH http://localhost:3000/api/content/${carousel?.id || "{ID}"}/slides/{SLIDE_ID}/elements/{ELEMENT_ID} \\
-  -H "Content-Type: application/json" \\
-  -d '{ "position": { "x": 120, "y": 300 } }'
+\`\`\`bash
+python3 <<'PY'
+import json, urllib.request
+ID = "${carousel?.id || "{ID}"}"
+BASE = f"http://localhost:3000/api/content/{ID}"
 
-# Delete an element
-curl -s -X DELETE http://localhost:3000/api/content/${carousel?.id || "{ID}"}/slides/{SLIDE_ID}/elements/{ELEMENT_ID}
+item = json.loads(urllib.request.urlopen(BASE).read())
 
-# Replace background only
-curl -s -X PUT http://localhost:3000/api/content/${carousel?.id || "{ID}"}/slides/{SLIDE_ID}/background \\
-  -H "Content-Type: application/json" \\
-  -d '{ "kind": "solid", "color": "#000000" }'
+def patch_element(slide_id, element_id, patch):
+    req = urllib.request.Request(
+        f"{BASE}/slides/{slide_id}/elements/{element_id}",
+        data=json.dumps(patch).encode(),
+        headers={"Content-Type": "application/json"},
+        method="PATCH",
+    )
+    urllib.request.urlopen(req).read()
 
-### Delete a slide:
+# Example: bump every body-text scssStyles font-size by inspecting current value
+for slide in item["slides"]:
+    for el in slide["elements"]:
+        if el["kind"] == "container" and "font-size: 24px" in el.get("scssStyles", ""):
+            patch_element(slide["id"], el["id"], {
+                "scssStyles": el["scssStyles"].replace("font-size: 24px", "font-size: 32px")
+            })
+PY
+\`\`\`
+
+### Delete / undo / reorder
+\`\`\`bash
 curl -s -X DELETE http://localhost:3000/api/content/${carousel?.id || "{ID}"}/slides/{SLIDE_ID}
+curl -s -X POST http://localhost:3000/api/content/${carousel?.id || "{ID}"}/slides/{SLIDE_ID}/undo
+curl -s -X PUT http://localhost:3000/api/content/${carousel?.id || "{ID}"}/slides \\
+  -H "Content-Type: application/json" -d '{ "slideIds": ["id1", "id2"] }'
+\`\`\`
 
-### Save caption + hashtags:
-curl -s -X PUT http://localhost:3000/api/content/${carousel?.id || "{ID}"}/caption \\
+### Save caption + hashtags (PATCH on the content item itself)
+There is NO /caption endpoint. Use PATCH on the content item:
+\`\`\`bash
+curl -s -X PATCH http://localhost:3000/api/content/${carousel?.id || "{ID}"} \\
   -H "Content-Type: application/json" \\
-  -d '{"caption": "Your caption text...", "hashtags": ["tag1", "tag2", "tag3"]}'
+  -d '{ "caption": "Your caption text...", "hashtags": ["tag1", "tag2"] }'
+\`\`\`
 
-### Save as style preset:
+### Style presets
+\`\`\`bash
 curl -s -X POST http://localhost:3000/api/style-presets \\
   -H "Content-Type: application/json" \\
-  -d '{"name": "Style Name", "designRules": "description of visual rules...", "aspectRatio": "${carousel?.aspectRatio || "4:5"}"}'
+  -d '{"name": "Style Name", "designRules": "...", "aspectRatio": "${carousel?.aspectRatio || "4:5"}"}'
+\`\`\`
 
-### Assets (images attached to this content item):
-# List assets
+### Assets (images attached to this content item)
+\`\`\`bash
 curl -s http://localhost:3000/api/content/${carousel?.id || "{ID}"}/assets
-
-# Add asset (url must be a /uploads/* path from /api/upload)
-curl -s -X POST http://localhost:3000/api/content/${carousel?.id || "{ID}"}/assets \\
-  -H "Content-Type: application/json" \\
-  -d '{"url": "/uploads/photo.jpg", "name": "Team photo", "description": "optional hint"}'
-
-# Update asset name/description
-curl -s -X PATCH http://localhost:3000/api/content/${carousel?.id || "{ID}"}/assets/{ASSET_ID} \\
-  -H "Content-Type: application/json" \\
-  -d '{"name": "New name", "description": "updated hint"}'
-
-# Remove asset
+curl -s -X POST http://localhost:3000/api/content/${carousel?.id || "{ID}"}/assets -H "Content-Type: application/json" -d '{"url": "/uploads/photo.jpg", "name": "Team photo"}'
+curl -s -X PATCH http://localhost:3000/api/content/${carousel?.id || "{ID}"}/assets/{ASSET_ID} -H "Content-Type: application/json" -d '{"name": "New name"}'
 curl -s -X DELETE http://localhost:3000/api/content/${carousel?.id || "{ID}"}/assets/{ASSET_ID}
+\`\`\`
 
-### Reference images (style references the AI studies):
-# List references
+### Reference images (style references the AI studies)
+\`\`\`bash
 curl -s http://localhost:3000/api/content/${carousel?.id || "{ID}"}/references
-
-# Add reference image
-curl -s -X POST http://localhost:3000/api/content/${carousel?.id || "{ID}"}/references \\
-  -H "Content-Type: application/json" \\
-  -d '{"url": "/uploads/ref.jpg", "name": "Style reference"}'
-
-# Remove reference image
+curl -s -X POST http://localhost:3000/api/content/${carousel?.id || "{ID}"}/references -H "Content-Type: application/json" -d '{"url": "/uploads/ref.jpg", "name": "Style reference"}'
 curl -s -X DELETE "http://localhost:3000/api/content/${carousel?.id || "{ID}"}/references?imageId={IMAGE_ID}"
-
-### Other endpoints:
-- GET /api/content/{id} — get content item with all slides
-- PUT /api/content/{id}/slides — reorder (body: { "slideIds": [...] })
+\`\`\`
 
 ## Slide composition rules (CRITICAL)
 
@@ -369,7 +412,7 @@ When asked to "optimize the hook" or "improve slide 1":
 After creating all slides, proactively offer to generate:
 1. Instagram caption (150-300 chars): hook line, value summary, CTA
 2. 20-30 hashtags: mix of high-reach (500K+), medium (50K-500K), and niche (<50K)
-3. Save via PUT /api/content/{id}/caption
+3. Save via PATCH /api/content/{id} with body { caption, hashtags }
 
 ## Behavioral rules
 - BE PROACTIVE: Create first, refine later. Never ask for permission to start creating.
