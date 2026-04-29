@@ -10,6 +10,7 @@ Karpathy-style LLM wiki. Pages are compiled at ingest time from decisions, incid
 - [chat-route](pages/entities/chat-route.md) — Claude CLI subprocess + SSE streaming for ideation/context chat
 - [slide-editor](pages/entities/slide-editor.md) — Canvas/overlay editor over the structured slide model
 - [structured-slide-pipeline](pages/entities/structured-slide-pipeline.md) — slide types/schema/serializer/migrator/coords/defaults
+- [export-pipeline](pages/entities/export-pipeline.md) — Puppeteer renderer + ZIP packager that screenshots `wrapSlideHtml()` output
 - [business-context](pages/entities/business-context.md) — persisted business profile injected into prompts
 
 ## Concepts
@@ -26,6 +27,7 @@ Karpathy-style LLM wiki. Pages are compiled at ingest time from decisions, incid
 - [append-only-agent-contract-2026-04-26](pages/sources/append-only-agent-contract-2026-04-26.md)
 - [rebrand-open-social-2026-04-26](pages/sources/rebrand-open-social-2026-04-26.md)
 - [windows-claude-cli-silent-failure-2026-04-15](pages/sources/windows-claude-cli-silent-failure-2026-04-15.md)
+- [puppeteer-heavy-font-timeout-2026-04-29](raw/incidents/puppeteer-heavy-font-timeout-2026-04-29.md)
 
 ## Comparisons
 
