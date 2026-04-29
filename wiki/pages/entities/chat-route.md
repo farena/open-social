@@ -43,3 +43,4 @@ Streams not just text tokens but also tool-use deltas (commit `fa11104`): when t
 - 2026-04-26 (`714cb79`) — Mode rename `carousel` → `content-generation`.
 - 2026-04-26 (`fa11104`) — Tool-use deltas + inline status chips.
 - 2026-04-28 (`69b9d7a`) — Client `messages` initial state fixed for SSR.
+- 2026-04-29 (`c896e9e`) — Editor-mode system prompt (`buildChatSystemPrompt`) now ships a Material Symbols icon guide (default `Material Symbols Rounded`, axis knobs, safe vocabulary, anti-clutter rules). Pairs with `buildGoogleFontsFamilyParam` in [[entities/structured-slide-pipeline]] so the preview iframe actually loads the variable-axis font.
