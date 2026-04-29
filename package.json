@@ -9,7 +9,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/Hainrixz/open-carrusel"
+    "url": "https://github.com/farena/open-social"
   },
   "scripts": {
     "setup": "node scripts/setup.mjs",
