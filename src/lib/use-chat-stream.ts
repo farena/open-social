@@ -89,9 +89,8 @@ export function useChatStream(opts: UseChatStreamOptions = {}): {
     onStreamEnd,
   } = opts;
 
-  const [messages, setMessages] = useState<ChatMessage[]>(() =>
-    loadMessages(storageKey)
-  );
+  // Start empty to match SSR; the effect below hydrates from localStorage on mount.
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isStreaming, setIsStreaming] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const sessionIdRef = useRef<string | null>(null);
