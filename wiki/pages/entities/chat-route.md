@@ -3,7 +3,7 @@ title: Chat route — POST /api/chat
 type: entity
 code_refs: [src/app/api/chat/route.ts, src/lib/chat-system-prompt.ts, src/lib/ideation-system-prompt.ts, src/lib/content-idea-system-prompt.ts, src/lib/context-chat-system-prompt.ts, src/lib/claude-path.ts, src/lib/use-chat-stream.ts]
 sources: [raw/incidents/windows-claude-cli-silent-failure-2026-04-15.md]
-related: [pages/entities/generate-route.md, pages/concepts/sse-streaming.md]
+related: [pages/entities/generate-route.md, pages/entities/content-routes.md, pages/concepts/sse-streaming.md]
 created: 2026-04-29
 updated: 2026-04-29
 confidence: high
@@ -44,3 +44,4 @@ Streams not just text tokens but also tool-use deltas (commit `fa11104`): when t
 - 2026-04-26 (`fa11104`) — Tool-use deltas + inline status chips.
 - 2026-04-28 (`69b9d7a`) — Client `messages` initial state fixed for SSR.
 - 2026-04-29 (`c896e9e`) — Editor-mode system prompt (`buildChatSystemPrompt`) now ships a Material Symbols icon guide (default `Material Symbols Rounded`, axis knobs, safe vocabulary, anti-clutter rules). Pairs with `buildGoogleFontsFamilyParam` in [[entities/structured-slide-pipeline]] so the preview iframe actually loads the variable-axis font.
+- 2026-04-29 (`7b01153`) — Editor-mode API reference rewritten as exhaustive ("don't explore the codebase"). Adds an explicit **token-efficiency rule** ($1 budget per turn → prefer granular endpoints over whole-slide PUT) and a **single-`python3`-process batching pattern** for bulk edits across many elements (one urllib loop instead of N curl subprocesses). Also corrects the caption-save path: there is no `/caption` route — use `PATCH /api/content/{id}` with `{ caption, hashtags }`. New granular endpoints documented in [[entities/content-routes]].
