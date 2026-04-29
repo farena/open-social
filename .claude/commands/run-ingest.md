@@ -65,12 +65,27 @@ User-supplied args: $ARGUMENTS
    - Replace the `last-ingest-commit:` header line with `last-ingest-commit: <HEAD_SHA>`. If the header is missing entirely, insert it at the top of the file.
    - Append a single line: `## [YYYY-MM-DD] run-ingest | BASE_SHORT..HEAD_SHORT — U units, P pages touched, R raw entries` (where `BASE_SHORT`/`HEAD_SHORT` are 7-char SHAs).
 
-10. **Report to the user.** A compact summary:
+10. **Commit the ingest** (skip if `--dry-run` or if no files under `wiki/` were modified):
+    - Stage only paths under `wiki/` (e.g. `git add wiki/`). Do NOT stage anything outside the wiki — if other files are dirty, leave them untouched.
+    - Run `git status --porcelain wiki/` to confirm what will be committed; if empty, skip the commit.
+    - Create a new commit (never amend) with a HEREDOC message in this shape:
+      ```
+      docs(wiki): ingest BASE_SHORT..HEAD_SHORT — U units, P pages, R raw
+
+      <one-line-per-unit summary, max ~10 lines>
+
+      Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>
+      ```
+    - If the pre-commit hook fails, fix the issue, re-stage, and create a NEW commit (do not use `--amend` or `--no-verify`).
+    - Do NOT push.
+
+11. **Report to the user.** A compact summary:
     - Window: `BASE_SHORT..HEAD_SHORT` (N commits).
     - Pages created / modified (counts + list).
     - Decisions / incidents added (list).
     - Units intentionally skipped and why (1-line each, max 5).
     - 2-3 suggestions of follow-up: missing decision context to capture manually, pages that look stale and should be linted, etc.
+    - The new commit SHA (or "no commit — no wiki changes" / "no commit — dry-run").
 
 ## Hard rules
 
