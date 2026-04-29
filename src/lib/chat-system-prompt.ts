@@ -317,6 +317,45 @@ curl -s -X DELETE "http://localhost:3000/api/content/${carousel?.id || "{ID}"}/r
 - Keep critical content in the center 80% of the slide
 - Swipe indicator on slide 1 (subtle arrow or "swipe →" text)
 
+## Icons — Material Symbols (Google)
+
+Google Material Symbols are available as a Google Font. Use them for visual emphasis: bullet markers, feature lists, CTAs, decorative accents in headings, status badges. The font loader detects the family name and pulls the variable font with all axes (opsz, wght, FILL, GRAD), so you can tune them via CSS.
+
+### How to use
+1. Default family: \`'Material Symbols Rounded'\` (use this unless you have a reason to switch).
+2. Other variants: \`'Material Symbols Outlined'\` (geometric), \`'Material Symbols Sharp'\` (angular). Pick ONE per content item for visual consistency.
+3. Insert the icon as text content of a span/div, where the text is the icon's snake_case name from https://fonts.google.com/icons.
+
+### Example (inside an element's htmlContent + scssStyles)
+
+\`\`\`json
+{
+  "id": "feature-1",
+  "kind": "container",
+  "position": { "x": 80, "y": 600 },
+  "size": { "w": 920, "h": 120 },
+  "htmlContent": "<div class=\\"row\\"><span class=\\"ico\\">school</span><p>Gestión académica integral</p></div>",
+  "scssStyles": "& .row { display: flex; align-items: center; gap: 24px; }\\n& .ico { font-family: 'Material Symbols Rounded'; font-size: 64px; color: ${brand.colors.accent}; font-variation-settings: 'FILL' 1, 'wght' 500, 'GRAD' 0, 'opsz' 48; line-height: 1; }\\n& p { font-family: 'Inter', sans-serif; font-size: 32px; color: #fff; margin: 0; }"
+}
+\`\`\`
+
+### CSS knobs
+- \`font-size\` — icon size in px (also drives bounding box).
+- \`color\` — icon color (the icon paints with currentColor).
+- \`font-variation-settings: 'FILL' 0 | 1\` — outline (0) vs filled (1).
+- \`font-variation-settings: 'wght' 100..700\` — stroke weight.
+- Always set \`line-height: 1\` on the icon span so it doesn't add vertical padding.
+
+### Safe vocabulary (icons that exist and fit Kmpus / education / SaaS topics)
+school, language, translate, group, groups, person, supervisor_account, menu_book, edit_note, assignment, fact_check, check_circle, task_alt, verified, trending_up, insights, bar_chart, dashboard, schedule, event, calendar_month, payments, credit_card, mail, chat, support_agent, lightbulb, rocket_launch, bolt, star, favorite, arrow_forward, arrow_outward, swipe, settings, lock, public, language, devices, smartphone
+
+You can use other icon names from fonts.google.com/icons — but stick to ones you're sure exist (snake_case, lowercase). If the name doesn't exist, the icon renders as literal text, which looks broken.
+
+### Don't
+- Don't mix Material Symbols variants (Rounded + Outlined) in the same content item.
+- Don't use icons for decoration on every slide — they should reinforce a message, not clutter.
+- Don't put icons in 8+ places on one slide. 1–3 icons per slide is the sweet spot.
+
 ## Hook optimization
 When asked to "optimize the hook" or "improve slide 1":
 1. Generate 3 alternative hooks:

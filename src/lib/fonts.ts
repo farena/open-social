@@ -1,5 +1,6 @@
 import { readFile, writeFile, mkdir } from "fs/promises";
 import path from "path";
+import { buildGoogleFontsFamilyParam } from "./slide-html";
 
 const FONT_CACHE_DIR = path.resolve(process.cwd(), "data", ".font-cache");
 
@@ -74,7 +75,7 @@ async function cacheFont(family: string, css: string): Promise<void> {
 
 async function fetchAndInlineFont(family: string): Promise<string | null> {
   // Fetch CSS from Google Fonts (with woff2-capable user agent)
-  const url = `https://fonts.googleapis.com/css2?family=${encodeURIComponent(family)}:wght@300;400;500;600;700;800&display=block`;
+  const url = `https://fonts.googleapis.com/css2?${buildGoogleFontsFamilyParam(family)}&display=block`;
   const response = await fetch(url, {
     headers: {
       // User agent that tells Google to serve woff2 format

@@ -35,6 +35,19 @@ export function extractFontFamilies(html: string): string[] {
 }
 
 /**
+ * Build the `family=...` query param for one Google Fonts family.
+ * Material Symbols variants need their variable axes spelled out; otherwise
+ * Google serves a fixed default and `font-variation-settings` becomes a no-op.
+ */
+export function buildGoogleFontsFamilyParam(family: string): string {
+  const encoded = encodeURIComponent(family);
+  if (/^Material Symbols (Outlined|Rounded|Sharp)$/i.test(family)) {
+    return `family=${encoded}:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200`;
+  }
+  return `family=${encoded}:wght@300;400;500;600;700;800`;
+}
+
+/**
  * Wraps slide body HTML into a full HTML document at the correct dimensions.
  * This is THE shared rendering contract between preview (iframe) and export (Puppeteer).
  */
@@ -52,12 +65,7 @@ export function wrapSlideHtml(
     fontBlock = `<style>${options.inlineFontCss}</style>`;
   } else if (fontFamilies.length > 0) {
     // For preview: use Google Fonts CDN link
-    const params = fontFamilies
-      .map(
-        (f) =>
-          `family=${encodeURIComponent(f)}:wght@300;400;500;600;700;800`
-      )
-      .join("&");
+    const params = fontFamilies.map(buildGoogleFontsFamilyParam).join("&");
     fontBlock = `<link href="https://fonts.googleapis.com/css2?${params}&display=swap" rel="stylesheet">`;
   }
 
