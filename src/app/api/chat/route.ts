@@ -11,6 +11,7 @@ import { getBrand } from "@/lib/brand";
 import { getBusinessContext } from "@/lib/business-context";
 import { getContentItem } from "@/lib/content-items";
 import { getPreset } from "@/lib/style-presets";
+import { pushItemSnapshot } from "@/lib/content-item-snapshots";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -54,6 +55,8 @@ export async function POST(request: NextRequest) {
   // Build dynamic system prompt depending on mode
   let systemPrompt: string;
   let agentName: string;
+  // Tracks the fetched content item (if any) for pre-chat snapshotting.
+  let resolvedContentItem: Awaited<ReturnType<typeof getContentItem>> = null;
   if (mode === "business-context") {
     const ctx = await getBusinessContext();
     systemPrompt = buildContextChatSystemPrompt(ctx);
@@ -80,6 +83,7 @@ export async function POST(request: NextRequest) {
         { status: 404 }
       );
     }
+    resolvedContentItem = item;
     systemPrompt = buildContentIdeaSystemPrompt(item, brand, ctx);
     agentName = "content-idea-chat";
   } else {
@@ -98,8 +102,18 @@ export async function POST(request: NextRequest) {
       stylePresetId ? getPreset(stylePresetId) : Promise.resolve(null),
       listAssets(),
     ]);
+    resolvedContentItem = contentItem;
     systemPrompt = buildSystemPrompt(brand, contentItem, stylePreset, businessContext, assets);
     agentName = "content-generation-chat";
+  }
+
+  if (contentItemId && resolvedContentItem) {
+    try {
+      const label = message.slice(0, 80);
+      await pushItemSnapshot(contentItemId, "chat", label);
+    } catch (err) {
+      console.error("[chat] failed to push pre-chat snapshot:", err);
+    }
   }
 
   const claudePath = getClaudePath();
