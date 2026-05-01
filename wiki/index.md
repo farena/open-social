@@ -12,13 +12,14 @@ Karpathy-style LLM wiki. Pages are compiled at ingest time from decisions, incid
 - [structured-slide-pipeline](pages/entities/structured-slide-pipeline.md) — slide types/schema/serializer/migrator/coords/defaults
 - [export-pipeline](pages/entities/export-pipeline.md) — Puppeteer renderer + ZIP packager that screenshots `wrapSlideHtml()` output
 - [business-context](pages/entities/business-context.md) — persisted business profile injected into prompts
+- [wiki-query](pages/entities/wiki-query.md) — local BM25 CLI over `wiki/pages/` (no LLM, no network)
 
 ## Concepts
 
 - [sse-streaming](pages/concepts/sse-streaming.md) — newline-delimited `data:` events from Claude subprocess to browser
 - [structured-slide-model](pages/concepts/structured-slide-model.md) — JSON-as-source-of-truth, serializer-only-to-HTML
 - [append-only-agent-contract](pages/concepts/append-only-agent-contract.md) — agent may POST slides, server rejects PUT/DELETE during `generating`
-- [version-history](pages/concepts/version-history.md) — bounded `previousVersions` snapshots per slide, server-side undo
+- [version-history](pages/concepts/version-history.md) — bounded per-slide snapshot stacks (`previousVersions` + `nextVersions`), server-side undo / redo
 
 ## Sources
 

@@ -20,9 +20,9 @@ Visual editor over the [[entities/structured-slide-pipeline]] JSON model. Lives 
 - **`SlideOverlay`** — transparent layer that owns hit-testing, selection, drag, and resize. Computes everything from the JSON model and `slide-coords` math helpers.
 - **`PropertiesPanel`** — sidebar that switches its controls based on the selected element's `kind` (or shows background / "+ add element" controls when nothing is selected).
 - **`LayersPanel`** — z-order list with show/hide.
-- **`Toolbar`** — global slide actions (background, add element, undo).
+- **`Toolbar`** — top strip with the aspect-ratio selector on the left and an action cluster on the right: **Undo / Redo** buttons (active slide's `previousVersions` / `nextVersions`, disabled at the boundaries), fullscreen, safe zones, save-as-template, delete, details, chat toggle, export. The Undo/Redo affordance is per-active-slide — buttons reflect the count for `slides[activeIndex]`, and the click hits `/undo` or `/redo` for that slide.
 - **`useSlideEditor`** — hook exposing the slide reducer, selection state, and mutation helpers. The single source of state for the editor.
-- **`useEditorShortcuts`** — keyboard bindings (delete, undo, arrow-key nudge, escape to clear selection).
+- **`useEditorShortcuts`** — keyboard bindings: delete, arrow-key nudge, escape to clear selection, `Cmd/Ctrl+Z` (undo), `Cmd/Ctrl+Shift+Z` (redo), `Cmd/Ctrl+D` duplicate, `Cmd/Ctrl+]` / `[` z-order. Both undo and redo are server round-trips — they call back into the page's `handleUndoSlide` / `handleRedoSlide`, which hit `/api/content/[id]/slides/[slideId]/undo` (or `/redo`) and refetch the item. See [[concepts/version-history]].
 
 ## Inline rich text
 
@@ -45,3 +45,4 @@ Canvas units (e.g. 0..1080) → screen units via `canvasToScreen(point, scale)` 
 - 2026-04-25 (`17f2637`) — Component split + structure refactor.
 - 2026-04-26 (`b34fc19`) — Operates on `ContentItem` instead of `Carousel`.
 - 2026-05-01 (`c552e67`) — `useSlideEditor` absorbs server echoes of in-flight persists by JSON content signature, so keystrokes typed during the PUT round-trip are no longer clobbered by the response.
+- 2026-05-01 (`f99b603`) — Toolbar gained Undo / Redo buttons in the top-right action cluster; `useEditorShortcuts` added `Cmd/Ctrl+Shift+Z` for redo. Both wire through to the new `/redo` route alongside the existing `/undo`. The buttons are disabled when the active slide's respective stack is empty.

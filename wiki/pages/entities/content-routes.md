@@ -1,11 +1,11 @@
 ---
 title: Content API routes
 type: entity
-code_refs: [src/app/api/content/route.ts, src/app/api/content/[id]/route.ts, src/app/api/content/[id]/slides/route.ts, src/app/api/content/[id]/slides/[slideId]/route.ts, src/app/api/content/[id]/slides/[slideId]/undo/route.ts, src/app/api/content/[id]/slides/[slideId]/background/route.ts, src/app/api/content/[id]/slides/[slideId]/elements/route.ts, src/app/api/content/[id]/slides/[slideId]/elements/[elementId]/route.ts, src/app/api/content/[id]/assets/route.ts, src/app/api/content/[id]/assets/[assetId]/route.ts, src/app/api/content/[id]/references/route.ts, src/app/api/content/[id]/export/route.ts, src/lib/content-items.ts]
+code_refs: [src/app/api/content/route.ts, src/app/api/content/[id]/route.ts, src/app/api/content/[id]/slides/route.ts, src/app/api/content/[id]/slides/[slideId]/route.ts, src/app/api/content/[id]/slides/[slideId]/undo/route.ts, src/app/api/content/[id]/slides/[slideId]/redo/route.ts, src/app/api/content/[id]/slides/[slideId]/background/route.ts, src/app/api/content/[id]/slides/[slideId]/elements/route.ts, src/app/api/content/[id]/slides/[slideId]/elements/[elementId]/route.ts, src/app/api/content/[id]/assets/route.ts, src/app/api/content/[id]/assets/[assetId]/route.ts, src/app/api/content/[id]/references/route.ts, src/app/api/content/[id]/export/route.ts, src/lib/content-items.ts]
 sources: [raw/decisions/carousel-to-content-item-pivot-2026-04-26.md, raw/decisions/append-only-agent-contract-2026-04-26.md]
 related: [pages/entities/content-item-model.md, pages/entities/generate-route.md, pages/entities/structured-slide-pipeline.md, pages/concepts/append-only-agent-contract.md, pages/concepts/version-history.md]
 created: 2026-04-29
-updated: 2026-04-29
+updated: 2026-05-01
 confidence: high
 ---
 
@@ -23,7 +23,8 @@ REST surface for [[entities/content-item-model]]. Replaces the legacy `/api/caro
 | GET / POST | `/api/content/[id]/slides` | List / append slide |
 | PUT | `/api/content/[id]/slides` | Reorder (`{ slideIds: [...] }`) |
 | GET / PUT / DELETE | `/api/content/[id]/slides/[slideId]` | Single slide (PUT replaces background+elements wholesale) |
-| POST | `/api/content/[id]/slides/[slideId]/undo` | Pop one snapshot from `previousVersions` — see [[concepts/version-history]] |
+| POST | `/api/content/[id]/slides/[slideId]/undo` | Pop one snapshot from `previousVersions`, push current state onto `nextVersions` — see [[concepts/version-history]] |
+| POST | `/api/content/[id]/slides/[slideId]/redo` | Mirror of `/undo`: pop from `nextVersions`, push current state onto `previousVersions` |
 | PUT | `/api/content/[id]/slides/[slideId]/background` | Replace just the background; elements untouched |
 | POST | `/api/content/[id]/slides/[slideId]/elements` | Append one element (id auto-generated if omitted) |
 | PATCH / DELETE | `/api/content/[id]/slides/[slideId]/elements/[elementId]` | Patch fields on one element / remove it |
@@ -53,3 +54,4 @@ The slide route inspects `X-Agent-Origin: claude` and refuses PUT/DELETE with `4
 - 2026-04-26 (`cca70c2`) — Append-only 409 enforcement on PUT/DELETE.
 - 2026-04-28 (`aab095d`) — Assets and references endpoints ported under `/api/content/[id]`.
 - 2026-04-29 (`7b01153`) — Granular slide endpoints added: `PUT /slides/[id]/background`, `POST /slides/[id]/elements`, `PATCH|DELETE /slides/[id]/elements/[elementId]`. Backed by `addSlideElement`/`updateSlideElement`/`removeSlideElement`/`updateSlideBackground` in `src/lib/content-items.ts`. Same `X-Agent-Origin` 409 gate as the whole-slide PUT/DELETE.
+- 2026-05-01 (`f99b603`) — Added `POST /slides/[slideId]/redo` (mirror of `/undo`) and updated `/undo` to also push current state onto `nextVersions` so redo is reversible.
