@@ -41,20 +41,47 @@ interface ContentItemsData {
   contentItems: ContentItem[];
 }
 
-function pushSnapshot(slide: Slide): void {
-  const snapshot: SlideSnapshot = {
+function snapshotOf(slide: Slide): SlideSnapshot {
+  return {
     background: structuredClone(slide.background),
     elements: structuredClone(slide.elements),
     legacyHtml: slide.legacyHtml,
   };
-  slide.previousVersions.push(snapshot);
-  if (slide.previousVersions.length > MAX_VERSIONS) {
-    slide.previousVersions.shift();
+}
+
+function applySnapshot(slide: Slide, snapshot: SlideSnapshot): void {
+  slide.background = snapshot.background;
+  slide.elements = snapshot.elements;
+  if (snapshot.legacyHtml !== undefined) {
+    slide.legacyHtml = snapshot.legacyHtml;
+  } else {
+    delete slide.legacyHtml;
   }
 }
 
+function pushBounded(stack: SlideSnapshot[], snapshot: SlideSnapshot): void {
+  stack.push(snapshot);
+  if (stack.length > MAX_VERSIONS) stack.shift();
+}
+
+// Snapshot the current visual state into history. A user-driven edit also
+// invalidates any forward (redo) history — we're branching off.
+function pushSnapshot(slide: Slide): void {
+  pushBounded(slide.previousVersions, snapshotOf(slide));
+  slide.nextVersions = [];
+}
+
 async function load(): Promise<ContentItemsData> {
-  return readDataSafe<ContentItemsData>(CONTENT_ITEMS_FILE, { contentItems: [] });
+  const data = await readDataSafe<ContentItemsData>(CONTENT_ITEMS_FILE, {
+    contentItems: [],
+  });
+  // Migrate slides persisted before nextVersions existed.
+  for (const item of data.contentItems) {
+    for (const slide of item.slides) {
+      if (!Array.isArray(slide.nextVersions)) slide.nextVersions = [];
+    }
+  }
+  return data;
 }
 
 async function save(data: ContentItemsData): Promise<void> {
@@ -146,6 +173,7 @@ export async function appendSlide(
     elements: input.elements,
     legacyHtml: input.legacyHtml,
     previousVersions: [],
+    nextVersions: [],
   };
   item.slides.push(slide);
   item.updatedAt = now();
@@ -238,14 +266,25 @@ export async function undoSlide(
   const slide = item.slides.find((s) => s.id === slideId);
   if (!slide || slide.previousVersions.length === 0) return null;
 
-  const snapshot = slide.previousVersions.pop()!;
-  slide.background = snapshot.background;
-  slide.elements = snapshot.elements;
-  if (snapshot.legacyHtml !== undefined) {
-    slide.legacyHtml = snapshot.legacyHtml;
-  } else {
-    delete slide.legacyHtml;
-  }
+  pushBounded(slide.nextVersions, snapshotOf(slide));
+  applySnapshot(slide, slide.previousVersions.pop()!);
+  item.updatedAt = now();
+  await save(data);
+  return item;
+}
+
+export async function redoSlide(
+  itemId: string,
+  slideId: string
+): Promise<ContentItem | null> {
+  const data = await load();
+  const item = data.contentItems.find((c) => c.id === itemId);
+  if (!item) return null;
+  const slide = item.slides.find((s) => s.id === slideId);
+  if (!slide || slide.nextVersions.length === 0) return null;
+
+  pushBounded(slide.previousVersions, snapshotOf(slide));
+  applySnapshot(slide, slide.nextVersions.pop()!);
   item.updatedAt = now();
   await save(data);
   return item;

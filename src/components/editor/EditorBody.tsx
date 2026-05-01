@@ -16,6 +16,7 @@ interface EditorBodyProps {
   showSafeZones?: boolean;
   onSlidePersisted?: (slide: Slide) => void;
   onUndoSlide?: (slideId: string) => void;
+  onRedoSlide?: (slideId: string) => void;
   /** Mounted between the canvas column and the PropertiesPanel (e.g. caption). */
   belowPreview?: ReactNode;
   /** Mounted above the canvas column (toolbar). */
@@ -40,6 +41,7 @@ export function EditorBody({
   showSafeZones = false,
   onSlidePersisted,
   onUndoSlide,
+  onRedoSlide,
   belowPreview,
   toolbar,
 }: EditorBodyProps) {
@@ -78,6 +80,7 @@ export function EditorBody({
     selection,
     dispatch,
     onUndoRequest: onUndoSlide ? () => onUndoSlide(slide.id) : undefined,
+    onRedoRequest: onRedoSlide ? () => onRedoSlide(slide.id) : undefined,
   });
 
   return (

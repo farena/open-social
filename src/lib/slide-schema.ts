@@ -88,6 +88,7 @@ export const slideSchema = z.object({
   elements: z.array(slideElementSchema),
   legacyHtml: z.string().optional(),
   previousVersions: z.array(slideSnapshotSchema),
+  nextVersions: z.array(slideSnapshotSchema),
 });
 
 /**

@@ -20,6 +20,7 @@ export interface Slide {
   elements: SlideElement[];
   legacyHtml?: string;
   previousVersions: SlideSnapshot[];
+  nextVersions: SlideSnapshot[];
 }
 
 export interface ReferenceImage {

@@ -77,6 +77,7 @@ export function createEmptyStructuredSlide(notes = ""): Omit<Slide, "order"> {
     background: createDefaultBackground(),
     elements: [],
     previousVersions: [],
+    nextVersions: [],
   };
 }
 

@@ -11,6 +11,8 @@ interface UseEditorShortcutsOptions {
   dispatch: (action: SlideEditorAction) => void;
   /** Called for Cmd/Ctrl+Z so the page can hit /undo. */
   onUndoRequest?: () => void;
+  /** Called for Cmd/Ctrl+Shift+Z so the page can hit /redo. */
+  onRedoRequest?: () => void;
   /** Whether the canvas is the active focus target (avoid hijacking inputs). */
   enabled?: boolean;
 }
@@ -35,6 +37,7 @@ export function useEditorShortcuts({
   selection,
   dispatch,
   onUndoRequest,
+  onRedoRequest,
   enabled = true,
 }: UseEditorShortcutsOptions) {
   useEffect(() => {
@@ -61,6 +64,15 @@ export function useEditorShortcuts({
         if (onUndoRequest) {
           e.preventDefault();
           onUndoRequest();
+        }
+        return;
+      }
+
+      // Cmd/Ctrl+Shift+Z — server redo
+      if (meta && e.shiftKey && e.key.toLowerCase() === "z") {
+        if (onRedoRequest) {
+          e.preventDefault();
+          onRedoRequest();
         }
         return;
       }
@@ -128,5 +140,5 @@ export function useEditorShortcuts({
 
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [slide, selection, dispatch, onUndoRequest, enabled]);
+  }, [slide, selection, dispatch, onUndoRequest, onRedoRequest, enabled]);
 }

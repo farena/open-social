@@ -145,6 +145,13 @@ export default function ContentItemPage({ params }: PageProps) {
     if (res.ok) await fetchItem();
   };
 
+  const handleRedoSlide = async (slideId: string) => {
+    const res = await fetch(`/api/content/${id}/slides/${slideId}/redo`, {
+      method: "POST",
+    });
+    if (res.ok) await fetchItem();
+  };
+
   const handleDeleteItem = useCallback(() => {
     if (!item) return;
     setConfirmState({
@@ -336,6 +343,7 @@ export default function ContentItemPage({ params }: PageProps) {
 
   // --- Generating / Generated state: show editor ---
 
+  const activeSlideForToolbar = item.slides[activeSlide];
   const toolbar = (
     <Toolbar
       aspectRatio={item.aspectRatio}
@@ -356,6 +364,18 @@ export default function ContentItemPage({ params }: PageProps) {
       contentItemId={id}
       slideCount={item.slides.length}
       onViewDetails={item.state === "generated" ? () => setShowDetailsModal(true) : undefined}
+      onUndoSlide={
+        activeSlideForToolbar
+          ? () => handleUndoSlide(activeSlideForToolbar.id)
+          : undefined
+      }
+      onRedoSlide={
+        activeSlideForToolbar
+          ? () => handleRedoSlide(activeSlideForToolbar.id)
+          : undefined
+      }
+      undoCount={activeSlideForToolbar?.previousVersions.length ?? 0}
+      redoCount={activeSlideForToolbar?.nextVersions?.length ?? 0}
     />
   );
 
@@ -438,6 +458,7 @@ export default function ContentItemPage({ params }: PageProps) {
             onActiveChange={setActiveSlide}
             showSafeZones={showSafeZones}
             onUndoSlide={handleUndoSlide}
+            onRedoSlide={handleRedoSlide}
             onSlidePersisted={(updated) => {
               setItem((prev) =>
                 prev

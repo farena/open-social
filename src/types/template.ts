@@ -5,7 +5,7 @@ export interface Template {
   name: string;
   description: string;
   aspectRatio: AspectRatio;
-  slides: Omit<Slide, "previousVersions">[];
+  slides: Omit<Slide, "previousVersions" | "nextVersions">[];
   tags: string[];
   createdAt: string;
 }
