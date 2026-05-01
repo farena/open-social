@@ -213,13 +213,22 @@ export async function POST(
           } catch {
             // stream already closed
           }
-          // Leave state as "generating" on non-zero exit — Task 8 will add retry path
-        } else {
-          // Success: flip state to "generated" (also sets generatedAt via updateContentItem logic)
-          updateContentItem(id, { state: "generated" }).catch((err) => {
-            console.error("[content/generate] failed to update state to generated", err);
-          });
         }
+
+        // Always resolve the "generating" state on exit so the client stops
+        // polling. If slides were appended, treat as generated (partial output
+        // is still useful and editable); otherwise revert to idea so the user
+        // can retry. The agent writes slides via independent curl POSTs, so
+        // their existence is decoupled from the subprocess exit code.
+        getContentItem(id)
+          .then((current) => {
+            if (!current || current.state !== "generating") return;
+            const nextState = current.slides.length > 0 ? "generated" : "idea";
+            return updateContentItem(id, { state: nextState });
+          })
+          .catch((err) => {
+            console.error("[content/generate] failed to resolve generating state", err);
+          });
 
         try {
           controller.enqueue(

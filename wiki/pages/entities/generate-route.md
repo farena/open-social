@@ -23,7 +23,7 @@ Spawns the Claude CLI as a subprocess to design slides for a `ContentItem`, stre
 3. **Spawn** with `cross-spawn` when the resolved CLI path is a `.cmd`/`.bat` shim, otherwise Node's `spawn`. See [[sources/windows-claude-cli-silent-failure-2026-04-15]] for why.
 4. **Stream** newline-delimited Claude `stream-json` events from stdout, translate to SSE events on the response (`type: token`, `type: result`).
 5. **Timeout** at 8 minutes (`maxDuration: 300` on the route, internal `setTimeout` at 480_000 ms kills the subprocess).
-6. **On exit**: success → `updateContentItem(id, { state: "generated" })` (auto-stamps `generatedAt`); non-zero → emit `event: error` with stderr (capped at 8 KB) and *leave state as `generating`* (intentional — Task 8 will add a retry path).
+6. **On exit**: emit `event: error` with stderr tail (capped at 8 KB) if exit code is non-zero, then **always resolve the `generating` state** based on slide count — `slides.length > 0` → `generated` (auto-stamps `generatedAt`); `slides.length === 0` → revert to `idea`. This decouples the persisted state from the subprocess exit code, since slides are appended via independent curl POSTs and survive an aborted/killed subprocess. Without this, common cases (client navigates away → `cancel()` → SIGTERM → non-zero exit; budget cap reached mid-run; 8-minute timeout) would leave the item stuck in `generating` and the client polling forever.
 7. Always emits `event: done` with `{ contentItemId, exitCode }` before closing.
 
 ## Spawn args
@@ -68,3 +68,4 @@ Notes:
 - 2026-04-26 (`cca70c2`) — System prompt updated for append-only.
 - 2026-04-28 (`7b237bf`) — Returns 409 if already generating; client debounces the button.
 - 2026-05-01 (`c552e67`) — Content page client consumes the SSE body for live refetches instead of polling; 1500 ms fallback poll only fires when no stream is active (e.g. reload mid-generation).
+- 2026-05-01 — On subprocess exit, the route now always resolves `generating` (→ `generated` if slides exist, → `idea` otherwise) instead of leaving non-zero exits stuck in `generating`. Fixes the infinite-polling bug when the client disconnected mid-generation or the agent hit `--max-budget-usd`.
