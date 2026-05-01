@@ -138,11 +138,11 @@ The `tokenize` regex preserves path-style refs (`src/lib/data.ts`) as a single t
 - Create: `scripts/wiki-query/__tests__/cli.test.ts`
 - Modify: `package.json` (deps + bin + script)
 
-- [ ] **Step 1: Write failing test** — `cli.test.ts::test_smoke` runs `tsx scripts/wiki-query/cli.ts --version` via `child_process.execFileSync` and asserts exit 0 + stdout matches `/^wiki-query \d+\.\d+\.\d+$/`.
-- [ ] **Step 2: Run test, confirm fail** — `npx jest scripts/wiki-query/__tests__/cli.test.ts -t smoke`.
-- [ ] **Step 3: Implement minimal change** — `cli.ts` with shebang `#!/usr/bin/env -S npx tsx`, `parseArgs` for `--version`, prints version. Add deps + `bin` entry to `package.json`. Run `npm install`.
-- [ ] **Step 4: Run test, confirm pass**.
-- [ ] **Step 5: Commit** — `feat(wiki-query): scaffold CLI module + deps`.
+- [x] **Step 1: Write failing test** — `cli.test.ts::test_smoke` runs `tsx scripts/wiki-query/cli.ts --version` via `child_process.execFileSync` and asserts exit 0 + stdout matches `/^wiki-query \d+\.\d+\.\d+$/`.
+- [x] **Step 2: Run test, confirm fail** — `npx jest scripts/wiki-query/__tests__/cli.test.ts -t smoke`.
+- [x] **Step 3: Implement minimal change** — `cli.ts` with shebang `#!/usr/bin/env -S npx tsx`, `parseArgs` for `--version`, prints version. Add deps + `bin` entry to `package.json`. Run `npm install`.
+- [x] **Step 4: Run test, confirm pass**.
+- [x] **Step 5: Commit** — `feat(wiki-query): scaffold CLI module + deps`. *(Skipped per run-plan rules — implementation stays in working tree.)*
 
 Validation:
 ```bash
@@ -160,11 +160,11 @@ npx wiki-query --version
 - Create: `scripts/wiki-query/__tests__/fixtures/sample-entity.md`
 - Create: `scripts/wiki-query/__tests__/parser.test.ts`
 
-- [ ] **Step 1: Write failing test** — fixture markdown with full YAML frontmatter; assert `parsePage(path).frontmatter.type === "entity"`, `code_refs` is `string[]`, `body` does not contain the `---` fences, `body` starts with the first content line.
-- [ ] **Step 2: Run test, confirm fail**.
-- [ ] **Step 3: Implement** — wrap `gray-matter`: `const m = matter(readFileSync(path, "utf8")); return { path: toRepoRel(path), frontmatter: m.data, body: m.content };`.
-- [ ] **Step 4: Run test, confirm pass**.
-- [ ] **Step 5: Commit** — `feat(wiki-query): page parser via gray-matter`.
+- [x] **Step 1: Write failing test** — fixture markdown with full YAML frontmatter; assert `parsePage(path).frontmatter.type === "entity"`, `code_refs` is `string[]`, `body` does not contain the `---` fences, `body` starts with the first content line.
+- [x] **Step 2: Run test, confirm fail**.
+- [x] **Step 3: Implement** — wrap `gray-matter`: `const m = matter(readFileSync(path, "utf8")); return { path: toRepoRel(path), frontmatter: m.data, body: m.content };`.
+- [x] **Step 4: Run test, confirm pass**.
+- [x] **Step 5: Commit** — `feat(wiki-query): page parser via gray-matter`. *(Skipped per run-plan rules — implementation stays in working tree.)*
 
 Edge cases tested:
 - Page with no frontmatter — throws `Error` naming the path (only valid for malformed files; the wiki always has frontmatter).
@@ -182,11 +182,11 @@ Edge cases tested:
 - Create: `scripts/wiki-query/__tests__/fixtures/wiki/raw/decisions/y.md`
 - Create: `scripts/wiki-query/__tests__/fixtures/wiki/index.md`
 
-- [ ] **Step 1: Write failing test** — `loadCorpus(fixtures/wiki, { includeRaw: false })` returns 1 page; with `includeRaw: true` returns 2; `index.md` and `log.md` are never included regardless.
-- [ ] **Step 2: Run test, confirm fail**.
-- [ ] **Step 3: Implement** — recursive walk via `fs.readdirSync(..., { recursive: true, withFileTypes: true })`, filter `.md` files, exclude `index.md`/`log.md` by basename, exclude `wiki/raw/**` unless `includeRaw`. Map through `parsePage`.
-- [ ] **Step 4: Run test, confirm pass**.
-- [ ] **Step 5: Commit** — `feat(wiki-query): corpus loader with --raw scope`.
+- [x] **Step 1: Write failing test** — `loadCorpus(fixtures/wiki, { includeRaw: false })` returns 1 page; with `includeRaw: true` returns 2; `index.md` and `log.md` are never included regardless.
+- [x] **Step 2: Run test, confirm fail**.
+- [x] **Step 3: Implement** — recursive walk via `fs.readdirSync(..., { recursive: true, withFileTypes: true })`, filter `.md` files, exclude `index.md`/`log.md` by basename, exclude `wiki/raw/**` unless `includeRaw`. Map through `parsePage`.
+- [x] **Step 4: Run test, confirm pass**.
+- [x] **Step 5: Commit** — `feat(wiki-query): corpus loader with --raw scope`. *(Skipped per run-plan rules.)*
 
 ---
 
@@ -196,11 +196,11 @@ Edge cases tested:
 - Create: `scripts/wiki-query/ranker.ts`
 - Create: `scripts/wiki-query/__tests__/ranker.test.ts`
 
-- [ ] **Step 1: Write failing test** — corpus of 3 fixture pages, one obviously about "puppeteer fonts"; assert `rank(pages, "puppeteer", 3)[0].page.path` ends with the puppeteer fixture and `score > 0`. Second test: `rank(pages, "", 5)` returns all pages with `score === 0`.
-- [ ] **Step 2: Run test, confirm fail**.
-- [ ] **Step 3: Implement** — `MiniSearch` with the contract above. Empty-query fallback returns `pages.map(page => ({ page, score: 0, snippet: "" }))` (snippet filled by Task 6). Pass-through for `limit`.
-- [ ] **Step 4: Run test, confirm pass**.
-- [ ] **Step 5: Commit** — `feat(wiki-query): BM25 ranking via MiniSearch`.
+- [x] **Step 1: Write failing test** — corpus of 3 fixture pages, one obviously about "puppeteer fonts"; assert `rank(pages, "puppeteer", 3)[0].page.path` ends with the puppeteer fixture and `score > 0`. Second test: `rank(pages, "", 5)` returns all pages with `score === 0`.
+- [x] **Step 2: Run test, confirm fail**.
+- [x] **Step 3: Implement** — `MiniSearch` with the contract above. Empty-query fallback returns `pages.map(page => ({ page, score: 0, snippet: "" }))` (snippet filled by Task 6). Pass-through for `limit`.
+- [x] **Step 4: Run test, confirm pass**.
+- [x] **Step 5: Commit** — `feat(wiki-query): BM25 ranking via MiniSearch`. *(Skipped per run-plan rules.)*
 
 Validation:
 ```bash
@@ -223,11 +223,11 @@ for (const r of rank(pages, 'sse streaming', 3)) {
 - Create: `scripts/wiki-query/filters.ts`
 - Create: `scripts/wiki-query/__tests__/filters.test.ts`
 
-- [ ] **Step 1: Write failing test** — `applyFilters(pages, { type: "concept" })`, `applyFilters(pages, { refs: "src/lib/data.ts" })`, `applyFilters(pages, { related: "entities/chat-route.md" })` each narrow correctly. Combined filters AND together. `refs` matches via substring; `related` matches exactly (after stripping leading `pages/` if present).
-- [ ] **Step 2: Run test, confirm fail**.
-- [ ] **Step 3: Implement** — pure function operating on `frontmatter` only. `refs` does `code_refs.some(r => r.includes(needle))`. `related` normalizes both sides: `r.replace(/^pages\//, "").replace(/\.md$/, "") === needle.replace(/^pages\//, "").replace(/\.md$/, "")`.
-- [ ] **Step 4: Run test, confirm pass**.
-- [ ] **Step 5: Commit** — `feat(wiki-query): frontmatter filters (type/refs/related)`.
+- [x] **Step 1: Write failing test** — `applyFilters(pages, { type: "concept" })`, `applyFilters(pages, { refs: "src/lib/data.ts" })`, `applyFilters(pages, { related: "entities/chat-route.md" })` each narrow correctly. Combined filters AND together. `refs` matches via substring; `related` matches exactly (after stripping leading `pages/` if present).
+- [x] **Step 2: Run test, confirm fail**.
+- [x] **Step 3: Implement** — pure function operating on `frontmatter` only. `refs` does `code_refs.some(r => r.includes(needle))`. `related` normalizes both sides: `r.replace(/^pages\//, "").replace(/\.md$/, "") === needle.replace(/^pages\//, "").replace(/\.md$/, "")`.
+- [x] **Step 4: Run test, confirm pass**.
+- [x] **Step 5: Commit** — `feat(wiki-query): frontmatter filters (type/refs/related)`. *(Skipped per run-plan rules.)*
 
 Notes:
 - `refs` substring match is intentional — wiki `code_refs` carry full paths but a user querying `useSlideEditor` should still hit them.
@@ -241,11 +241,11 @@ Notes:
 - Create: `scripts/wiki-query/snippet.ts`
 - Create: `scripts/wiki-query/__tests__/snippet.test.ts`
 
-- [ ] **Step 1: Write failing test** — for a page containing "Buffer stdout, split on newline, parse each line as JSON.", `snippet(page, "stdout")` includes `"stdout"` and is ≤ 200 chars; for an empty query, returns `body.slice(0, 200)` with collapsed whitespace.
-- [ ] **Step 2: Run test, confirm fail**.
-- [ ] **Step 3: Implement** — for each query token, find first case-insensitive occurrence in body, take the earliest match across tokens, expand ±100 chars, collapse runs of whitespace to single spaces. Fall back to the first 200 chars when nothing matches.
-- [ ] **Step 4: Run test, confirm pass**.
-- [ ] **Step 5: Commit** — `feat(wiki-query): snippet extraction around query hit`.
+- [x] **Step 1: Write failing test** — for a page containing "Buffer stdout, split on newline, parse each line as JSON.", `snippet(page, "stdout")` includes `"stdout"` and is ≤ 200 chars; for an empty query, returns `body.slice(0, 200)` with collapsed whitespace.
+- [x] **Step 2: Run test, confirm fail**.
+- [x] **Step 3: Implement** — for each query token, find first case-insensitive occurrence in body, take the earliest match across tokens, expand ±100 chars, collapse runs of whitespace to single spaces. Fall back to the first 200 chars when nothing matches.
+- [x] **Step 4: Run test, confirm pass**.
+- [x] **Step 5: Commit** — `feat(wiki-query): snippet extraction around query hit`. *(Skipped per run-plan rules.)*
 
 ---
 
@@ -256,17 +256,17 @@ Notes:
 - Create: `scripts/wiki-query/render.ts`
 - Modify: `scripts/wiki-query/__tests__/cli.test.ts`
 
-- [ ] **Step 1: Write failing tests:**
+- [x] **Step 1: Write failing tests:**
   - `wiki-query "session"` → exit 0, stdout contains the path of the highest-ranked page.
   - `wiki-query --type entity` (no positional query) → exit 0, lists all entity pages in path-sorted order.
   - `wiki-query "totally-not-in-the-wiki-xyzzy"` → exit 1, stderr contains "no matches".
   - `wiki-query "X" --json` → stdout parses as JSON, is a non-empty array, each item has `path`/`score`/`frontmatter`/`snippet`.
   - `wiki-query --limit 2 ""` → exit 0, ≤ 2 results.
   - `wiki-query "X" --raw` includes `wiki/raw/**` results.
-- [ ] **Step 2: Run tests, confirm fail**.
-- [ ] **Step 3: Implement** — `parseArgs({ options: { type: { type: "string" }, refs: { type: "string" }, related: { type: "string" }, raw: { type: "boolean" }, limit: { type: "string", default: "5" }, json: { type: "boolean" }, root: { type: "string" }, version: { type: "boolean" } }, allowPositionals: true })`. Default wiki root: resolve `wiki/` from `process.cwd()`; allow override via `--root`. Wire loader → filters → ranker → snippet → render. Exit codes: 0 on success, 1 on no matches, 2 on usage error.
-- [ ] **Step 4: Run tests, confirm pass**.
-- [ ] **Step 5: Commit** — `feat(wiki-query): CLI surface with --json and exit codes`.
+- [x] **Step 2: Run tests, confirm fail**.
+- [x] **Step 3: Implement** — `parseArgs({ options: { type: { type: "string" }, refs: { type: "string" }, related: { type: "string" }, raw: { type: "boolean" }, limit: { type: "string", default: "5" }, json: { type: "boolean" }, root: { type: "string" }, version: { type: "boolean" } }, allowPositionals: true })`. Default wiki root: resolve `wiki/` from `process.cwd()`; allow override via `--root`. Wire loader → filters → ranker → snippet → render. Exit codes: 0 on success, 1 on no matches, 2 on usage error.
+- [x] **Step 4: Run tests, confirm pass**.
+- [x] **Step 5: Commit** — `feat(wiki-query): CLI surface with --json and exit codes`. *(Skipped per run-plan rules.)*
 
 Output format (text):
 ```
@@ -281,11 +281,11 @@ wiki/pages/concepts/sse-streaming.md  (score 4.21)
 **Files:**
 - Create: `scripts/wiki-query/__tests__/real-wiki.test.ts`
 
-- [ ] **Step 1: Write failing test** — runs `wiki-query "puppeteer"` against the real `wiki/`; asserts `wiki/pages/entities/export-pipeline.md` or `wiki/raw/incidents/puppeteer-heavy-font-timeout-2026-04-29.md` (with `--raw`) is in the top 3. Skip the test gracefully (`it.skip`) if `wiki/` is empty or missing — test should not fail in a fresh clone before wiki is scaffolded.
-- [ ] **Step 2: Run test** — should pass straight off if Tasks 1–7 are sound; iterate on tokenization or scoring otherwise.
-- [ ] **Step 3: Implement fixes** if surfaced (likely none).
-- [ ] **Step 4: Run test, confirm pass**.
-- [ ] **Step 5: Commit** — `test(wiki-query): real-wiki smoke test`.
+- [x] **Step 1: Write failing test** — 4 cases (`puppeteer`, `--raw` broadens, `--type concept`, `--refs <bracket-path>`).
+- [x] **Step 2: Run test** — surfaced a real bug: gray-matter / js-yaml chokes on `[id]` Next.js dynamic-route segments inside `code_refs` flow sequences.
+- [x] **Step 3: Implement fixes** — added a frontmatter pre-processor in `parser.ts` that converts flow sequences into block sequences with quoted scalars, side-stepping YAML's flow-grammar ambiguity. Tightened all 4 real-wiki assertions to demand canonical pages (export-pipeline, sse-streaming, generate-route).
+- [x] **Step 4: Run test, confirm pass**.
+- [x] **Step 5: Commit** — `test(wiki-query): real-wiki smoke test`. *(Skipped per run-plan rules.)*
 
 ---
 
@@ -295,13 +295,13 @@ wiki/pages/concepts/sse-streaming.md  (score 4.21)
 - Create: `scripts/wiki-query/README.md`
 - Modify: `CLAUDE.md`
 
-- [ ] **Step 1**: Write `README.md` with:
+- [x] **Step 1**: Write `README.md` with:
   - Install: `npm install` (deps land via root `package.json`).
   - Usage: every flag with one example.
   - Guarantees: "no LLM, no network, no model downloads — pure BM25 + frontmatter."
   - Indexing model: "regenerated every run; no cache file" + when to revisit (>500 pages).
-- [ ] **Step 2**: Add to `CLAUDE.md` Conventions: `- Wiki search: npx wiki-query "..." (Node BM25, no LLM). See scripts/wiki-query/README.md.`
-- [ ] **Step 3: Commit** — `docs(wiki-query): README + CLAUDE.md pointer`.
+- [x] **Step 2**: Add to `CLAUDE.md` Conventions: `- Wiki search: npx wiki-query "..." (Node BM25, no LLM). See scripts/wiki-query/README.md.`
+- [x] **Step 3: Commit** — `docs(wiki-query): README + CLAUDE.md pointer`. *(Skipped per run-plan rules.)*
 
 ---
 
