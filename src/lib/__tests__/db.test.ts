@@ -65,6 +65,76 @@ describe("getDb()", () => {
     expect(tables).toContain("content_item_snapshots");
   });
 
+  it("creates the kv_config table", async () => {
+    const { getDb } = await import("@/lib/db");
+    const db = getDb();
+    const tables = db
+      .prepare("SELECT name FROM sqlite_master WHERE type='table'")
+      .all()
+      .map((r: unknown) => (r as { name: string }).name);
+    expect(tables).toContain("kv_config");
+  });
+
+  it("creates the templates table", async () => {
+    const { getDb } = await import("@/lib/db");
+    const db = getDb();
+    const tables = db
+      .prepare("SELECT name FROM sqlite_master WHERE type='table'")
+      .all()
+      .map((r: unknown) => (r as { name: string }).name);
+    expect(tables).toContain("templates");
+  });
+
+  it("creates the style_presets table", async () => {
+    const { getDb } = await import("@/lib/db");
+    const db = getDb();
+    const tables = db
+      .prepare("SELECT name FROM sqlite_master WHERE type='table'")
+      .all()
+      .map((r: unknown) => (r as { name: string }).name);
+    expect(tables).toContain("style_presets");
+  });
+
+  it("creates the assets table", async () => {
+    const { getDb } = await import("@/lib/db");
+    const db = getDb();
+    const tables = db
+      .prepare("SELECT name FROM sqlite_master WHERE type='table'")
+      .all()
+      .map((r: unknown) => (r as { name: string }).name);
+    expect(tables).toContain("assets");
+  });
+
+  it("creates the staged_actions table", async () => {
+    const { getDb } = await import("@/lib/db");
+    const db = getDb();
+    const tables = db
+      .prepare("SELECT name FROM sqlite_master WHERE type='table'")
+      .all()
+      .map((r: unknown) => (r as { name: string }).name);
+    expect(tables).toContain("staged_actions");
+  });
+
+  it("creates the idx_assets_added_at index", async () => {
+    const { getDb } = await import("@/lib/db");
+    const db = getDb();
+    const indexes = db
+      .prepare("SELECT name FROM sqlite_master WHERE type='index'")
+      .all()
+      .map((r: unknown) => (r as { name: string }).name);
+    expect(indexes).toContain("idx_assets_added_at");
+  });
+
+  it("creates the idx_staged_actions_status index", async () => {
+    const { getDb } = await import("@/lib/db");
+    const db = getDb();
+    const indexes = db
+      .prepare("SELECT name FROM sqlite_master WHERE type='index'")
+      .all()
+      .map((r: unknown) => (r as { name: string }).name);
+    expect(indexes).toContain("idx_staged_actions_status");
+  });
+
   it("returns the same instance on repeated calls (singleton)", async () => {
     const { getDb } = await import("@/lib/db");
     const db1 = getDb();

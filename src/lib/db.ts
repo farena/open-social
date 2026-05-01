@@ -44,6 +44,53 @@ CREATE TABLE IF NOT EXISTS content_item_snapshots (
   payload         TEXT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS idx_snapshots_item ON content_item_snapshots(content_item_id, created_at DESC);
+
+CREATE TABLE IF NOT EXISTS kv_config (
+  key        TEXT PRIMARY KEY,
+  value      TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS templates (
+  id            TEXT PRIMARY KEY,
+  name          TEXT NOT NULL,
+  description   TEXT NOT NULL,
+  aspect_ratio  TEXT NOT NULL,
+  slides        TEXT NOT NULL,
+  tags          TEXT NOT NULL DEFAULT '[]',
+  created_at    TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS style_presets (
+  id          TEXT PRIMARY KEY,
+  name        TEXT NOT NULL,
+  description TEXT,
+  payload     TEXT NOT NULL,
+  created_at  TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS assets (
+  id          TEXT PRIMARY KEY,
+  url         TEXT NOT NULL,
+  name        TEXT NOT NULL,
+  description TEXT,
+  added_at    TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_assets_added_at ON assets(added_at DESC);
+
+CREATE TABLE IF NOT EXISTS staged_actions (
+  id           TEXT PRIMARY KEY,
+  type         TEXT NOT NULL,
+  file_name    TEXT NOT NULL,
+  content      TEXT NOT NULL,
+  description  TEXT NOT NULL,
+  carousel_id  TEXT NOT NULL,
+  auto_execute INTEGER NOT NULL DEFAULT 0,
+  status       TEXT NOT NULL,
+  created_at   TEXT NOT NULL,
+  resolved_at  TEXT
+);
+CREATE INDEX IF NOT EXISTS idx_staged_actions_status ON staged_actions(status);
 `;
 
 let db: Database.Database | null = null;
