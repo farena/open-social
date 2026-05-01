@@ -32,3 +32,7 @@ Karpathy-style LLM wiki. Pages are compiled at ingest time from decisions, incid
 ## Comparisons
 
 _(none yet — candidates: json-storage-vs-sqlite, claude-cli-vs-sdk, html-string-vs-structured-slide)_
+
+## Backlog
+
+- [pending-tasks](pages/pending-tasks.md) — trabajo planificado pendiente de ejecución (planes en `docs/plans/`)
