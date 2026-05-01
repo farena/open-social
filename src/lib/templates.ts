@@ -1,26 +1,68 @@
-import { readDataSafe, writeData } from "./data";
+import { getDb } from "./db";
 import { generateId, now } from "./utils";
-import type { Template, TemplatesData } from "@/types/template";
+import type { Template } from "@/types/template";
 import type { ContentItem } from "@/types/content-item";
 
-const FILE = "templates.json";
+// ---------------------------------------------------------------------------
+// Row shape — mirrors the `templates` table columns
+// ---------------------------------------------------------------------------
 
-async function load(): Promise<TemplatesData> {
-  return readDataSafe<TemplatesData>(FILE, { templates: [] });
+interface TemplateRow {
+  id: string;
+  name: string;
+  description: string;
+  aspect_ratio: string;
+  slides: string; // JSON
+  tags: string;   // JSON
+  created_at: string;
 }
 
-async function save(data: TemplatesData): Promise<void> {
-  await writeData(FILE, data);
+// ---------------------------------------------------------------------------
+// Private helpers
+// ---------------------------------------------------------------------------
+
+function rowToTemplate(row: TemplateRow): Template {
+  return {
+    id: row.id,
+    name: row.name,
+    description: row.description,
+    aspectRatio: row.aspect_ratio as Template["aspectRatio"],
+    slides: JSON.parse(row.slides),
+    tags: JSON.parse(row.tags),
+    createdAt: row.created_at,
+  };
 }
+
+function templateToRow(template: Template): TemplateRow {
+  return {
+    id: template.id,
+    name: template.name,
+    description: template.description,
+    aspect_ratio: template.aspectRatio,
+    slides: JSON.stringify(template.slides),
+    tags: JSON.stringify(template.tags),
+    created_at: template.createdAt,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Public API
+// ---------------------------------------------------------------------------
 
 export async function listTemplates(): Promise<Template[]> {
-  const data = await load();
-  return data.templates;
+  const db = getDb();
+  const rows = db
+    .prepare("SELECT * FROM templates ORDER BY created_at ASC")
+    .all() as TemplateRow[];
+  return rows.map(rowToTemplate);
 }
 
 export async function getTemplate(id: string): Promise<Template | null> {
-  const data = await load();
-  return data.templates.find((t) => t.id === id) ?? null;
+  const db = getDb();
+  const row = db
+    .prepare("SELECT * FROM templates WHERE id = ?")
+    .get(id) as TemplateRow | undefined;
+  return row ? rowToTemplate(row) : null;
 }
 
 export async function saveAsTemplate(
@@ -28,7 +70,7 @@ export async function saveAsTemplate(
   name?: string,
   description?: string
 ): Promise<Template> {
-  const data = await load();
+  const db = getDb();
   const template: Template = {
     id: generateId(),
     name: name || item.hook || item.id,
@@ -45,16 +87,20 @@ export async function saveAsTemplate(
     tags: item.tags ?? [],
     createdAt: now(),
   };
-  data.templates.push(template);
-  await save(data);
+
+  const row = templateToRow(template);
+  db.prepare(`
+    INSERT INTO templates (id, name, description, aspect_ratio, slides, tags, created_at)
+    VALUES (@id, @name, @description, @aspect_ratio, @slides, @tags, @created_at)
+  `).run(row);
+
   return template;
 }
 
 export async function deleteTemplate(id: string): Promise<boolean> {
-  const data = await load();
-  const idx = data.templates.findIndex((t) => t.id === id);
-  if (idx === -1) return false;
-  data.templates.splice(idx, 1);
-  await save(data);
-  return true;
+  const db = getDb();
+  const result = db
+    .prepare("DELETE FROM templates WHERE id = ?")
+    .run(id);
+  return result.changes > 0;
 }
