@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, type ReactNode } from "react";
+import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { CarouselPreview } from "./CarouselPreview";
 import { PropertiesPanel } from "./PropertiesPanel";
 import { useSlideEditor } from "./useSlideEditor";
@@ -51,6 +51,7 @@ export function EditorBody({
   toolbar,
 }: EditorBodyProps) {
   const activeSlide = slides[activeIndex];
+  const [savedAt, setSavedAt] = useState(0);
 
   const persist = useCallback(
     async (slide: Slide) => {
@@ -68,9 +69,12 @@ export function EditorBody({
           }),
         },
       );
-      if (res.ok && onSlidePersisted) {
-        const updated = await res.json();
-        onSlidePersisted(updated);
+      if (res.ok) {
+        setSavedAt(Date.now());
+        if (onSlidePersisted) {
+          const updated = await res.json();
+          onSlidePersisted(updated);
+        }
       }
     },
     [contentItemId, onSlidePersisted],
@@ -85,11 +89,11 @@ export function EditorBody({
     lastSentContentRef,
   } = useSlideEditor(activeSlide, {
     onPersist: persist,
-    debounceMs: 10000,
+    debounceMs: 5000,
   });
 
   // Flush any pending debounced persist when the user closes/navigates away
-  // before the 10 s window expires. `fetch` with `keepalive: true` is required
+  // before the 5 s window expires. `fetch` with `keepalive: true` is required
   // here because the slide endpoint is PUT-only — sendBeacon always issues POST
   // and would 405 silently.
   useEffect(() => {
@@ -132,7 +136,7 @@ export function EditorBody({
   });
 
   // Bubble the live slide up so FullscreenPreview / SlideFilmstrip can render
-  // unsaved edits without waiting for the 10s persist debounce.
+  // unsaved edits without waiting for the 5s persist debounce.
   useEffect(() => {
     onLiveSlideChange?.(slide);
   }, [slide, onLiveSlideChange]);
@@ -150,6 +154,7 @@ export function EditorBody({
           slide={slide}
           selection={selection}
           dispatch={dispatch}
+          savedAt={savedAt}
         />
         {belowPreview}
       </div>

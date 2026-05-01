@@ -35,7 +35,7 @@ export default function ContentItemPage({ params }: PageProps) {
   const [showFullscreen, setShowFullscreen] = useState(false);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   // Mirrors the editor's in-flight slide so the fullscreen preview and the
-  // filmstrip can show unsaved edits before the 10s persist debounce fires.
+  // filmstrip can show unsaved edits before the 5s persist debounce fires.
   const [liveSlide, setLiveSlide] = useState<Slide | null>(null);
 
   const [confirmState, setConfirmState] = useState<{

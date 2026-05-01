@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, type CSSProperties } from "react";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { useEffect, useState, type CSSProperties } from "react";
+import { Check, ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SlideCanvas } from "./SlideCanvas";
 import { SlideOverlay } from "./SlideOverlay";
@@ -19,6 +19,8 @@ interface CarouselPreviewProps {
   slide: Slide;
   selection: Selection;
   dispatch: (action: SlideEditorAction) => void;
+  /** Timestamp updated each time the slide is successfully persisted. */
+  savedAt?: number;
 }
 
 /**
@@ -36,6 +38,7 @@ export function CarouselPreview({
   slide,
   selection,
   dispatch,
+  savedAt,
 }: CarouselPreviewProps) {
   const [prevIndex, setPrevIndex] = useState(activeIndex);
   const [direction, setDirection] = useState(12);
@@ -44,9 +47,28 @@ export function CarouselPreview({
     setPrevIndex(activeIndex);
   }
 
+  const [hiddenAt, setHiddenAt] = useState(0);
+  const showSaved = !!savedAt && savedAt !== hiddenAt;
+  useEffect(() => {
+    if (!savedAt || savedAt === hiddenAt) return;
+    const t = setTimeout(() => setHiddenAt(savedAt), 1800);
+    return () => clearTimeout(t);
+  }, [savedAt, hiddenAt]);
+
   return (
     <div className="flex-1 flex min-h-0 min-w-0" id="carousel-preview">
-      <div className="flex-1 flex flex-col min-h-0 min-w-0 bg-[#f0f0f0]">
+      <div className="relative flex-1 flex flex-col min-h-0 min-w-0 bg-[#f0f0f0]">
+        <div
+          className={`pointer-events-none absolute top-3 right-3 z-20 flex items-center gap-1.5 rounded-full bg-emerald-500 text-white text-xs font-medium px-2.5 py-1 shadow-sm transition-all duration-200 ${
+            showSaved
+              ? "opacity-100 translate-y-0"
+              : "opacity-0 -translate-y-1"
+          }`}
+          aria-live="polite"
+        >
+          <Check className="h-3.5 w-3.5" />
+          <span>Guardado</span>
+        </div>
         <div className="flex-1 relative min-h-0 p-8 px-14">
           <Button
             variant="ghost"
