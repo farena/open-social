@@ -6,6 +6,7 @@ import { buildContentGenerationSystemPrompt } from "@/lib/content-generation-sys
 import { getBrand } from "@/lib/brand";
 import { getBusinessContext } from "@/lib/business-context";
 import { getContentItem, updateContentItem } from "@/lib/content-items";
+import { pushItemSnapshot } from "@/lib/content-item-snapshots";
 import { DEFAULT_ASPECT_RATIO_FOR_TYPE } from "@/types/content-item";
 
 export const runtime = "nodejs";
@@ -43,6 +44,12 @@ export async function POST(
   ]);
 
   const aspectRatio = item.aspectRatio ?? DEFAULT_ASPECT_RATIO_FOR_TYPE[item.type];
+
+  try {
+    await pushItemSnapshot(id, "generate");
+  } catch (err) {
+    console.error("[content/generate] failed to push pre-generate snapshot:", err);
+  }
 
   await updateContentItem(id, {
     state: "generating",
