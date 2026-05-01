@@ -25,11 +25,6 @@ import {
 } from "./content-item-schema";
 import type { z } from "zod";
 
-// ---------------------------------------------------------------------------
-// Legacy export — kept for any caller that imports this constant
-// ---------------------------------------------------------------------------
-export const CONTENT_ITEMS_FILE = "content-items.json";
-
 export type NewContentItemInput = z.infer<typeof newContentItemInputSchema>;
 export type ContentItemPatch = z.infer<typeof contentItemPatchSchema>;
 
