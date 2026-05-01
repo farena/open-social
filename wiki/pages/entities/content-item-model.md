@@ -5,7 +5,7 @@ code_refs: [src/types/content-item.ts, src/lib/content-items.ts, src/lib/content
 sources: [raw/decisions/carousel-to-content-item-pivot-2026-04-26.md]
 related: [pages/entities/content-routes.md, pages/entities/generate-route.md, pages/entities/slide-editor.md, pages/entities/structured-slide-pipeline.md, pages/concepts/version-history.md, pages/concepts/append-only-agent-contract.md]
 created: 2026-04-29
-updated: 2026-04-29
+updated: 2026-05-01
 confidence: high
 ---
 
@@ -32,7 +32,7 @@ Slides are still defined in `src/types/carousel.ts` (re-exported by `content-ite
 
 - `createContentItem(input)` always lands in `state: "idea"` regardless of input (see `src/lib/content-items.ts:75`).
 - `updateContentItem(id, patch)` auto-stamps `generatedAt` on the first transition into `"generated"` (see `src/lib/content-items.ts:102`).
-- `appendSlide` enforces `MAX_SLIDES` (10, from `carousel.ts`) silently — returns `null` if exceeded.
+- `appendSlide` enforces `MAX_SLIDES` (20, from `src/types/carousel.ts`) silently — returns `null` if exceeded.
 - `updateSlide` snapshots into `previousVersions` only when an *editable* field changes (background, elements, legacyHtml) — `notes` updates do not consume undo budget. See [[concepts/version-history]].
 - `undoSlide` pops the last snapshot; restores `legacyHtml` only if it was present in the snapshot.
 - Asset operations: `addContentItemAsset` prepends (newest first); `removeContentItemAsset` returns `false` when the item or asset is missing.
@@ -54,3 +54,4 @@ Slides are still defined in `src/types/carousel.ts` (re-exported by `content-ite
 - 2026-04-26 (`b2eb327`) — CRUD lib with mutex + version snapshots.
 - 2026-04-26 (`cca70c2`) — Append-only agent invariant enforced at the slide route layer (see [[concepts/append-only-agent-contract]]).
 - 2026-04-27 (`4468ea9`) — Removed deprecated `src/lib/carousels.ts` and `Carousel` surface.
+- 2026-05-01 (lint) — Corrected `MAX_SLIDES` from 10 to 20 (drift from `src/types/carousel.ts:39`).
