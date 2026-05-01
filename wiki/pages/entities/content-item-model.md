@@ -3,7 +3,7 @@ title: ContentItem model
 type: entity
 code_refs: [src/types/content-item.ts, src/lib/content-items.ts, src/lib/content-item-schema.ts, src/types/carousel.ts, src/lib/db.ts, src/lib/content-item-row.ts, src/lib/content-item-snapshots.ts]
 sources: [raw/decisions/carousel-to-content-item-pivot-2026-04-26.md]
-related: [pages/entities/content-routes.md, pages/entities/generate-route.md, pages/entities/slide-editor.md, pages/entities/structured-slide-pipeline.md, pages/concepts/version-history.md, pages/concepts/append-only-agent-contract.md]
+related: [pages/entities/content-routes.md, pages/entities/generate-route.md, pages/entities/slide-editor.md, pages/entities/structured-slide-pipeline.md, pages/concepts/version-history.md, pages/concepts/append-only-agent-contract.md, pages/concepts/storage-architecture.md]
 created: 2026-04-29
 updated: 2026-05-01
 confidence: high
@@ -46,7 +46,7 @@ Row (de)serialization between TypeScript objects and SQLite columns is handled b
 ## Persistence
 
 - **Storage**: `data/sales.db` (better-sqlite3, WAL mode, `synchronous=NORMAL`, `foreign_keys=ON`). DB connection singleton is in `src/lib/db.ts` (`getDb()` / `closeDb()`). Path resolved via `path.resolve(process.cwd(), "data", "sales.db")`; override with `DB_PATH` in production or `TEST_DB_PATH` under vitest.
-- **Concurrency**: SQLite WAL transactions. The previous `async-mutex` + atomic temp-file rename approach (from `src/lib/data.ts`) is gone for ContentItems. `data.ts` still serves `brand.json`, `templates.json`, and other non-content-item JSON files.
+- **Concurrency**: SQLite WAL transactions. The previous `async-mutex` + atomic temp-file rename approach (from `src/lib/data.ts`) is gone. `src/lib/data.ts` has been deleted — all resources (`brand`, `business-context`, `templates`, `style-presets`, `assets`, `staged-actions`) moved to `data/sales.db` in a follow-up migration. See [[concepts/storage-architecture]].
 - **Schema** (three tables):
 
 ```sql
@@ -107,3 +107,4 @@ A separate versioning layer (coarser than slide-level undo) stores full `Content
 - 2026-05-01 (lint) — Corrected `MAX_SLIDES` from 10 to 20 (drift from `src/types/carousel.ts:39`).
 - 2026-05-01 (`f99b603`) — `redoSlide` added; `nextVersions` stack lands on slide rows.
 - 2026-05-01 (SQLite migration plan) — Persistence moved from `data/content-items.json` to `data/sales.db` (better-sqlite3). `async-mutex` removed for ContentItem writes. Content-item-level snapshot layer added (`content-item-snapshots.ts`). Row helpers in `src/lib/content-item-row.ts`. Slide-level undo/redo cap raised to 25.
+- 2026-05-01 (JSON resources migration) — All remaining JSON-backed resources migrated to `data/sales.db`. `src/lib/data.ts` deleted. See [[concepts/storage-architecture]].

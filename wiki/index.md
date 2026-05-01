@@ -20,6 +20,7 @@ Karpathy-style LLM wiki. Pages are compiled at ingest time from decisions, incid
 - [structured-slide-model](pages/concepts/structured-slide-model.md) — JSON-as-source-of-truth, serializer-only-to-HTML
 - [append-only-agent-contract](pages/concepts/append-only-agent-contract.md) — agent may POST slides, server rejects PUT/DELETE during `generating`
 - [version-history](pages/concepts/version-history.md) — bounded per-slide snapshot stacks (`previousVersions` + `nextVersions`), server-side undo / redo
+- [storage-architecture](pages/concepts/storage-architecture.md) — unified SQLite DB (`data/sales.db`), eight tables, singleton vs. collection pattern, test isolation, migration history
 
 ## Sources
 
@@ -33,7 +34,7 @@ Karpathy-style LLM wiki. Pages are compiled at ingest time from decisions, incid
 
 ## Comparisons
 
-_(none yet — candidates: json-storage-vs-sqlite, claude-cli-vs-sdk, html-string-vs-structured-slide)_
+_(candidates: claude-cli-vs-sdk, html-string-vs-structured-slide — json-storage-vs-sqlite is covered by [[concepts/storage-architecture]])_
 
 ## Backlog
 
