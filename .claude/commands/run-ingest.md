@@ -12,7 +12,7 @@ You are running an automated wiki ingest over the project's recent code changes.
 - Last ingest marker: !`grep -m1 '^last-ingest-commit:' wiki/log.md 2>/dev/null || echo "MISSING"`
 - HEAD: !`git rev-parse HEAD 2>/dev/null || echo MISSING`
 - HEAD short: !`git rev-parse --short HEAD 2>/dev/null`
-- Working tree clean: !`test -z "$(git status --porcelain)" && echo YES || echo NO`
+- Working tree clean: !`git diff-index --quiet HEAD -- && echo YES || echo NO`
 
 User-supplied args: $ARGUMENTS
 
