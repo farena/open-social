@@ -46,6 +46,7 @@ All at localhost:3000:
 - All data mutations go through `src/lib/data.ts` (never direct fs writes for JSON)
 - iframe slides always use `sandbox=""` attribute (no JavaScript execution)
 - The Claude subprocess gets `--allowedTools Bash WebFetch` and uses curl to call local API routes
+- Wiki search: `npx wiki-query "..."` (Node BM25, no LLM). See `scripts/wiki-query/README.md`.
 
 ## Wiki-first workflow
 

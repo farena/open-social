@@ -91,8 +91,23 @@ Triggered by: "query the wiki", "what does the wiki say about X", "according to 
 
 Steps:
 
-1. **Read `wiki/index.md` first** to identify candidate pages.
-2. Read the candidate pages. If a claim is fuzzy, **read the code at `code_refs`** before reading raws — code is the source of truth. Read `sources` raws for *why* context.
+1. **Find candidate pages with `wiki-query`.** Run the CLI from the repo root — it does BM25 ranking over the body plus frontmatter filtering, no LLM, no network:
+
+   ```bash
+   npx wiki-query "<the user's question or keywords>" --limit 5
+   ```
+
+   Common variants:
+   - `--type concept | entity | source | comparison` — restrict by page type.
+   - `--refs <path>` — filter to pages whose `code_refs` mention this path. Substring match, so `--refs useSlideEditor` catches `src/components/editor/useSlideEditor.ts`. Works without a positional query (filter-only mode).
+   - `--related <page>` — exact match against `related:` entries (after stripping `pages/` prefix and `.md` suffix). E.g. `--related entities/chat-route.md`.
+   - `--raw` — extend the corpus to include `wiki/raw/decisions/` and `wiki/raw/incidents/`. Off by default because raw entries are immutable history; use it when the user is asking about *why* / past incidents.
+   - `--json` — emit machine-readable output (each item: `path`, `score`, `frontmatter`, `snippet`).
+
+   Exit codes: `0` results found, `1` no matches (suggest `--raw` or rephrasing), `2` usage error.
+
+   Fall back to reading `wiki/index.md` only if the CLI is unavailable for some reason. See `scripts/wiki-query/README.md` for the full surface.
+2. Read the candidate pages the CLI surfaced. If a claim is fuzzy, **read the code at `code_refs`** before reading raws — code is the source of truth. Read `sources` raws for *why* context.
 3. Synthesize the answer with `[[wiki-link]]` citations to every page used, plus direct code-path citations where helpful.
 4. **If the answer has reusable value**, offer to file it as a new page (`pages/comparisons/...` or `pages/concepts/...`). If accepted, create it and update `index.md` and `log.md` (`## [YYYY-MM-DD] query-archived | <slug>`).
 5. If the wiki **does not have the answer**, say so explicitly and suggest either ingesting a missing decision, or running `/run-ingest` to refresh from recent commits.

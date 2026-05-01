@@ -11,6 +11,9 @@
     "type": "git",
     "url": "https://github.com/farena/open-social"
   },
+  "bin": {
+    "wiki-query": "scripts/wiki-query/cli.ts"
+  },
   "scripts": {
     "setup": "node scripts/setup.mjs",
     "dev": "next dev",
@@ -19,7 +22,8 @@
     "lint": "eslint",
     "doctor": "node scripts/doctor.mjs",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "wiki:query": "tsx scripts/wiki-query/cli.ts"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
@@ -41,7 +45,9 @@
     "react-dom": "19.2.4",
     "sharp": "^0.34.5",
     "tailwind-merge": "^3.5.0",
-    "zod": "^4.3.6"
+    "zod": "^4.3.6",
+    "gray-matter": "^4.0.3",
+    "minisearch": "^7.1.1"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
