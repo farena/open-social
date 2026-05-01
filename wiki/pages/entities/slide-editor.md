@@ -5,7 +5,7 @@ code_refs: [src/components/editor/SlideCanvas.tsx, src/components/editor/SlideOv
 sources: [raw/decisions/structured-slide-model-2026-04-25.md]
 related: [pages/entities/structured-slide-pipeline.md, pages/concepts/structured-slide-model.md, pages/concepts/version-history.md]
 created: 2026-04-29
-updated: 2026-04-29
+updated: 2026-05-01
 confidence: high
 ---
 
@@ -44,3 +44,4 @@ Canvas units (e.g. 0..1080) → screen units via `canvasToScreen(point, scale)` 
 - 2026-04-25 (`0e840cd`) — Lexical inline text editing.
 - 2026-04-25 (`17f2637`) — Component split + structure refactor.
 - 2026-04-26 (`b34fc19`) — Operates on `ContentItem` instead of `Carousel`.
+- 2026-05-01 (`c552e67`) — `useSlideEditor` absorbs server echoes of in-flight persists by JSON content signature, so keystrokes typed during the PUT round-trip are no longer clobbered by the response.

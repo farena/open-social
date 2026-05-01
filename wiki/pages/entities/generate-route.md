@@ -5,7 +5,7 @@ code_refs: [src/app/api/content/[id]/generate/route.ts, src/lib/content-generati
 sources: [raw/decisions/append-only-agent-contract-2026-04-26.md, raw/incidents/windows-claude-cli-silent-failure-2026-04-15.md]
 related: [pages/entities/content-item-model.md, pages/entities/chat-route.md, pages/concepts/sse-streaming.md, pages/concepts/append-only-agent-contract.md]
 created: 2026-04-29
-updated: 2026-04-29
+updated: 2026-05-01
 confidence: high
 ---
 
@@ -45,3 +45,4 @@ Built by `buildContentGenerationSystemPrompt` (`src/lib/content-generation-syste
 - 2026-04-26 (`2e28c26`) — Initial endpoint.
 - 2026-04-26 (`cca70c2`) — System prompt updated for append-only.
 - 2026-04-28 (`7b237bf`) — Returns 409 if already generating; client debounces the button.
+- 2026-05-01 (`c552e67`) — Content page client consumes the SSE body for live refetches instead of polling; 1500 ms fallback poll only fires when no stream is active (e.g. reload mid-generation).
