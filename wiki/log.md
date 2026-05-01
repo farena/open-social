@@ -1,4 +1,4 @@
-last-ingest-commit: f99b6034e49728a64537d49b2c8607c992389482
+last-ingest-commit: 4c5459fb54058368ea0daa295cb86a0ba40b8c9d
 
 # Wiki operation log
 
@@ -9,3 +9,4 @@ last-ingest-commit: f99b6034e49728a64537d49b2c8607c992389482
 ## [2026-05-01] run-ingest | e2ff372..30e6f2b — 1 unit, 3 pages touched, 0 raw entries
 ## [2026-05-01] ingest | wiki-query-frontmatter-preprocessor — 2 pages touched (raw decision + sources page) + index entry
 ## [2026-05-01] run-ingest | 30e6f2b..f99b603 — 2 units, 5 pages touched, 0 raw entries
+## [2026-05-01] run-ingest | f99b603..4c5459f — 2 units, 1 page touched, 1 raw entry
