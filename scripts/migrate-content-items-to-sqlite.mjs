@@ -279,15 +279,29 @@ function deepEqual(a, b) {
 // so the round-trip deep-equal works even for legacy items
 // ---------------------------------------------------------------------------
 
+function stripNulls(obj) {
+  // Strip keys with null/undefined values to match rowToContentItem's behaviour:
+  // optional fields that are absent in the row come back as absent keys, not as
+  // null values. The source JSON sometimes stores nulls explicitly.
+  const out = {};
+  for (const [k, v] of Object.entries(obj)) {
+    if (v === null || v === undefined) continue;
+    out[k] = v;
+  }
+  return out;
+}
+
 function normaliseForComparison(item) {
-  return {
+  return stripNulls({
     ...item,
-    slides: (item.slides ?? []).map((slide) => ({
-      ...slide,
-      previousVersions: slide.previousVersions ?? [],
-      nextVersions: slide.nextVersions ?? [],
-    })),
-  };
+    slides: (item.slides ?? []).map((slide) =>
+      stripNulls({
+        ...slide,
+        previousVersions: slide.previousVersions ?? [],
+        nextVersions: slide.nextVersions ?? [],
+      }),
+    ),
+  });
 }
 
 // ---------------------------------------------------------------------------
