@@ -11,7 +11,11 @@ import { cn } from "@/lib/utils";
 interface Props {
   contentItem: ContentItem;
   onSaved: (updated: ContentItem) => void;
-  onGenerateRequested: () => void;
+  /**
+   * Triggers the generation POST. The page owns the request lifecycle so it
+   * can consume the SSE response body for live updates instead of polling.
+   */
+  onStartGeneration: () => Promise<{ ok: true } | { ok: false; error: string }>;
   claudeAvailable?: boolean;
   onItemUpdated?: () => void;
 }
@@ -46,7 +50,7 @@ function Field({
 export function ContentItemDetailIdea({
   contentItem,
   onSaved,
-  onGenerateRequested,
+  onStartGeneration,
   claudeAvailable = true,
   onItemUpdated,
 }: Props) {
@@ -79,26 +83,13 @@ export function ContentItemDetailIdea({
     if (isGenerating) return;
     setIsGenerating(true);
     setGenerateError(null);
-    try {
-      const res = await fetch(`/api/content/${contentItem.id}/generate`, {
-        method: "POST",
-      });
-      if (res.status === 409) {
-        setGenerateError("Generation is already in progress for this item.");
-        setIsGenerating(false);
-        return;
-      }
-      if (!res.ok) {
-        setGenerateError("Failed to start generation. Please try again.");
-        setIsGenerating(false);
-        return;
-      }
-      // 2xx — hand off to parent (navigate to editor)
-      onGenerateRequested();
-    } catch {
-      setGenerateError("Network error. Please try again.");
+    const result = await onStartGeneration();
+    if (!result.ok) {
+      setGenerateError(result.error);
       setIsGenerating(false);
     }
+    // On ok: parent flips item.state to "generating" → this component unmounts
+    // and the editor view takes over; no need to clear local state.
   };
 
   const handleSave = async () => {

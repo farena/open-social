@@ -187,29 +187,45 @@ export function useSlideEditor(
   });
 
   // Track whether the local change is from us (pending persist) vs from
-  // upstream. We compare by identity of background/elements/legacyHtml refs:
-  // SET_SLIDE creates a new object, mutations create new arrays. Upstream
-  // arrives via the externalSlide effect.
+  // upstream. Identity alone is not enough: when we persist, the parent
+  // re-feeds us the server response as a *new* object with the same content,
+  // so we also remember the JSON of what we last sent and treat any upstream
+  // value with matching content as our own echo.
   const lastPersistedRef = useRef<Slide>(externalSlide);
+  const lastSentContentRef = useRef<string | null>(null);
   const persistTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Reset local state when upstream slide identity changes (different slide
-  // navigated to, or chat IA refetched the carousel).
+  const slideContentSignature = (s: Slide): string =>
+    JSON.stringify({
+      background: s.background,
+      elements: s.elements,
+      legacyHtml: s.legacyHtml,
+    });
+
+  // Reset local state when upstream slide changes for a real reason
+  // (different slide navigated to, or chat IA wrote new content). Absorb
+  // server echoes of our own persists silently so in-flight keystrokes
+  // aren't clobbered when the PUT round-trip resolves.
   useEffect(() => {
-    if (
-      externalSlide.id !== state.slide.id ||
-      externalSlide !== lastPersistedRef.current
-    ) {
-      // Only sync if upstream is a different slide OR the upstream value is
-      // not what we just persisted (i.e. someone else changed it).
-      const isOurOwnEcho =
-        externalSlide.id === state.slide.id &&
-        externalSlide === lastPersistedRef.current;
-      if (!isOurOwnEcho) {
-        dispatch({ type: "SET_SLIDE", slide: externalSlide });
-        lastPersistedRef.current = externalSlide;
-      }
+    if (externalSlide === lastPersistedRef.current) return;
+
+    if (externalSlide.id !== state.slide.id) {
+      dispatch({ type: "SET_SLIDE", slide: externalSlide });
+      lastPersistedRef.current = externalSlide;
+      return;
     }
+
+    const upstreamContent = slideContentSignature(externalSlide);
+    if (upstreamContent === lastSentContentRef.current) {
+      // Server-side echo of our last persist — absorb without resetting,
+      // so any keystrokes typed during the round-trip survive.
+      lastPersistedRef.current = externalSlide;
+      return;
+    }
+
+    // Foreign change (e.g. chat IA rewrote the slide) — last-write-wins.
+    dispatch({ type: "SET_SLIDE", slide: externalSlide });
+    lastPersistedRef.current = externalSlide;
   }, [externalSlide, state.slide.id]);
 
   // Debounced persist whenever the editable parts of the slide change.
@@ -219,6 +235,7 @@ export function useSlideEditor(
     if (persistTimerRef.current) clearTimeout(persistTimerRef.current);
     persistTimerRef.current = setTimeout(async () => {
       const snapshot = state.slide;
+      lastSentContentRef.current = slideContentSignature(snapshot);
       try {
         await onPersist(snapshot);
         lastPersistedRef.current = snapshot;

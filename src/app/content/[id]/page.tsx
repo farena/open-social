@@ -85,12 +85,18 @@ export default function ContentItemPage({ params }: PageProps) {
     load();
   }, [fetchItem]);
 
-  // Poll every 800ms while state === "generating"; stop when state flips to "generated".
+  // While state === "generating", normally a single SSE connection (started by
+  // handleStartGeneration) drives refetches as Claude writes slides. The
+  // interval below is a fallback for the "user reloaded mid-generation" case,
+  // where there's no active stream because the original POST happened in a
+  // previous page lifecycle.
+  const genStreamActiveRef = useRef(false);
   useEffect(() => {
     if (!item || item.state !== "generating") return;
+    if (genStreamActiveRef.current) return;
     const interval = setInterval(() => {
       fetchItem();
-    }, 800);
+    }, 1500);
     return () => clearInterval(interval);
   }, [item?.state, fetchItem]);
 
@@ -177,15 +183,104 @@ export default function ContentItemPage({ params }: PageProps) {
     }, 100);
   }, []);
 
-  // Called by ContentItemDetailIdea after a successful POST /generate (2xx only)
-  const handleGenerateRequested = useCallback(() => {
-    if (!item) return;
-    // Optimistically switch to editor view — the component already fired the POST
-    setItem((prev) =>
-      prev ? { ...prev, state: "generating" } : prev
-    );
+  // Consume the SSE body of an in-flight POST /generate, triggering throttled
+  // refetches as Claude streams updates and a final refetch when the stream
+  // closes. Replaces the previous fixed-interval polling.
+  const consumeGenerationStream = useCallback(
+    async (res: Response, signal: AbortSignal) => {
+      genStreamActiveRef.current = true;
+      const minIntervalMs = 600;
+      let lastFetchAt = 0;
+      let pendingTimer: ReturnType<typeof setTimeout> | null = null;
+
+      const triggerRefetch = () => {
+        const now = Date.now();
+        const since = now - lastFetchAt;
+        if (since >= minIntervalMs) {
+          lastFetchAt = now;
+          fetchItem();
+        } else if (!pendingTimer) {
+          pendingTimer = setTimeout(() => {
+            pendingTimer = null;
+            lastFetchAt = Date.now();
+            fetchItem();
+          }, minIntervalMs - since);
+        }
+      };
+
+      try {
+        if (res.body) {
+          const reader = res.body.getReader();
+          while (true) {
+            if (signal.aborted) {
+              try {
+                await reader.cancel();
+              } catch {
+                // ignore
+              }
+              break;
+            }
+            const { done } = await reader.read();
+            if (done) break;
+            triggerRefetch();
+          }
+        }
+      } catch {
+        // network/abort error — fall through to final refetch
+      } finally {
+        if (pendingTimer) clearTimeout(pendingTimer);
+        genStreamActiveRef.current = false;
+        if (!signal.aborted) {
+          await fetchItem();
+          setIsGenerating(false);
+        }
+      }
+    },
+    [fetchItem]
+  );
+
+  const generationAbortRef = useRef<AbortController | null>(null);
+  useEffect(() => {
+    return () => {
+      generationAbortRef.current?.abort();
+    };
+  }, []);
+
+  // Called by ContentItemDetailIdea: starts the POST, optimistically flips
+  // state, and hands the response body to consumeGenerationStream. Returns a
+  // result object so the Idea component can render its own button state.
+  const handleStartGeneration = useCallback(async (): Promise<
+    { ok: true } | { ok: false; error: string }
+  > => {
+    if (!item) return { ok: false, error: "Not loaded" };
+
+    let res: Response;
+    try {
+      res = await fetch(`/api/content/${id}/generate`, { method: "POST" });
+    } catch {
+      return { ok: false, error: "Network error. Please try again." };
+    }
+
+    if (res.status === 409) {
+      return {
+        ok: false,
+        error: "Generation is already in progress for this item.",
+      };
+    }
+    if (!res.ok) {
+      return { ok: false, error: "Failed to start generation. Please try again." };
+    }
+
+    setItem((prev) => (prev ? { ...prev, state: "generating" } : prev));
     setIsGenerating(true);
-  }, [item]);
+
+    const ctrl = new AbortController();
+    generationAbortRef.current?.abort();
+    generationAbortRef.current = ctrl;
+    void consumeGenerationStream(res, ctrl.signal);
+
+    return { ok: true };
+  }, [id, item, consumeGenerationStream]);
 
   // --- Loading / 404 ---
 
@@ -230,7 +325,7 @@ export default function ContentItemPage({ params }: PageProps) {
           <ContentItemDetailIdea
             contentItem={item}
             onSaved={(updated) => setItem(updated)}
-            onGenerateRequested={handleGenerateRequested}
+            onStartGeneration={handleStartGeneration}
             claudeAvailable={claudeAvailable}
             onItemUpdated={fetchItem}
           />
