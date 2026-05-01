@@ -1,12 +1,12 @@
-import { readDataSafe, writeData } from "./data";
+import { getKvConfig, setKvConfig } from "./kv-config";
 import { now } from "./utils";
 import type { BrandConfig } from "@/types/brand";
 import { DEFAULT_BRAND } from "@/types/brand";
 
-const FILE = "brand.json";
+const KV_KEY = "brand";
 
 export async function getBrand(): Promise<BrandConfig> {
-  return readDataSafe<BrandConfig>(FILE, DEFAULT_BRAND);
+  return getKvConfig<BrandConfig>(KV_KEY, DEFAULT_BRAND);
 }
 
 export async function updateBrand(
@@ -21,7 +21,7 @@ export async function updateBrand(
     updatedAt: now(),
     createdAt: current.createdAt || now(),
   };
-  await writeData(FILE, updated);
+  await setKvConfig(KV_KEY, updated);
   return updated;
 }
 

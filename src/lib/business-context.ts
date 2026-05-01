@@ -1,12 +1,12 @@
-import { readDataSafe, writeData } from "./data";
+import { getKvConfig, setKvConfig } from "./kv-config";
 import { now } from "./utils";
 import type { BusinessContext } from "@/types/business-context";
 import { DEFAULT_BUSINESS_CONTEXT } from "@/types/business-context";
 
-const FILE = "business-context.json";
+const KV_KEY = "business-context";
 
 export async function getBusinessContext(): Promise<BusinessContext> {
-  return readDataSafe<BusinessContext>(FILE, DEFAULT_BUSINESS_CONTEXT);
+  return getKvConfig<BusinessContext>(KV_KEY, DEFAULT_BUSINESS_CONTEXT);
 }
 
 export async function updateBusinessContext(
@@ -21,6 +21,6 @@ export async function updateBusinessContext(
     updatedAt: now(),
     createdAt: current.createdAt || now(),
   };
-  await writeData(FILE, updated);
+  await setKvConfig(KV_KEY, updated);
   return updated;
 }
