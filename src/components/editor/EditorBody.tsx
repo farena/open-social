@@ -71,19 +71,34 @@ export function EditorBody({
     [contentItemId, onSlidePersisted],
   );
 
-  const { slide, selection, dispatch, currentSlideRef, persistTimerRef } =
-    useSlideEditor(activeSlide, {
-      onPersist: persist,
-      debounceMs: 10000,
-    });
+  const {
+    slide,
+    selection,
+    dispatch,
+    currentSlideRef,
+    persistTimerRef,
+    lastSentContentRef,
+  } = useSlideEditor(activeSlide, {
+    onPersist: persist,
+    debounceMs: 10000,
+  });
 
   // Flush any pending debounced persist when the user closes/navigates away
-  // from the tab before the 10 s window expires. Uses sendBeacon when available
-  // (fire-and-forget, survives tab close), falling back to fetch with keepalive.
+  // before the 10 s window expires. `fetch` with `keepalive: true` is required
+  // here because the slide endpoint is PUT-only — sendBeacon always issues POST
+  // and would 405 silently.
   useEffect(() => {
     const handleBeforeUnload = () => {
-      if (persistTimerRef.current === null) return; // nothing pending
+      if (persistTimerRef.current === null) return;
       const current = currentSlideRef.current;
+      // Mirror slideContentSignature() in useSlideEditor so we can compare
+      // against lastSentContentRef and skip duplicate sends.
+      const signature = JSON.stringify({
+        background: current.background,
+        elements: current.elements,
+        legacyHtml: current.legacyHtml,
+      });
+      if (lastSentContentRef.current === signature) return;
       const body = JSON.stringify({
         background: current.background,
         elements: current.elements,
@@ -91,25 +106,17 @@ export function EditorBody({
           ? { legacyHtml: current.legacyHtml }
           : {}),
       });
-      const url = `/api/content/${contentItemId}/slides/${current.id}`;
-      const blob = new Blob([body], { type: "application/json" });
-      if (typeof navigator !== "undefined" && navigator.sendBeacon) {
-        navigator.sendBeacon(url, blob);
-      } else {
-        fetch(url, {
-          method: "PUT",
-          keepalive: true,
-          headers: { "Content-Type": "application/json" },
-          body,
-        }).catch(() => {
-          // best-effort — nothing to do if this fails during unload
-        });
-      }
+      fetch(`/api/content/${contentItemId}/slides/${current.id}`, {
+        method: "PUT",
+        keepalive: true,
+        headers: { "Content-Type": "application/json" },
+        body,
+      }).catch(() => {});
     };
 
     window.addEventListener("beforeunload", handleBeforeUnload);
     return () => window.removeEventListener("beforeunload", handleBeforeUnload);
-  }, [contentItemId, currentSlideRef, persistTimerRef]);
+  }, [contentItemId, currentSlideRef, persistTimerRef, lastSentContentRef]);
 
   useEditorShortcuts({
     slide,
