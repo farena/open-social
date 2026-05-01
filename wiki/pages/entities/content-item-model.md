@@ -45,7 +45,7 @@ Row (de)serialization between TypeScript objects and SQLite columns is handled b
 
 ## Persistence
 
-- **Storage**: `data/sales.db` (better-sqlite3, WAL mode, `synchronous=NORMAL`, `foreign_keys=ON`). DB connection singleton is in `src/lib/db.ts` (`getDb()` / `closeDb()`). Path resolved via `path.resolve(process.cwd(), "data", "sales.db")`; override with `KMPUS_DB_PATH` env var in tests.
+- **Storage**: `data/sales.db` (better-sqlite3, WAL mode, `synchronous=NORMAL`, `foreign_keys=ON`). DB connection singleton is in `src/lib/db.ts` (`getDb()` / `closeDb()`). Path resolved via `path.resolve(process.cwd(), "data", "sales.db")`; override with `DB_PATH` in production or `TEST_DB_PATH` under vitest.
 - **Concurrency**: SQLite WAL transactions. The previous `async-mutex` + atomic temp-file rename approach (from `src/lib/data.ts`) is gone for ContentItems. `data.ts` still serves `brand.json`, `templates.json`, and other non-content-item JSON files.
 - **Schema** (three tables):
 

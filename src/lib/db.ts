@@ -51,19 +51,23 @@ let db: Database.Database | null = null;
 export function getDb(): Database.Database {
   if (db) return db;
 
-  // Belt-and-suspenders: under vitest, refuse to open the production DB even
-  // if a test forgot to set KMPUS_DB_PATH. Prevents test fixtures from leaking
-  // into data/sales.db.
-  if (process.env.VITEST && !process.env.KMPUS_DB_PATH) {
-    throw new Error(
-      "[db] Refusing to open production DB under vitest. " +
-        "Set KMPUS_DB_PATH in beforeEach (or rely on vitest setupFiles).",
-    );
+  // Under vitest, only read TEST_DB_PATH — never DB_PATH. Prevents test
+  // fixtures from leaking into the production DB even if a test forgets
+  // its own beforeEach (the global setup at tests/setup-db.ts seeds a
+  // fallback TEST_DB_PATH for this exact case).
+  let dbPath: string;
+  if (process.env.VITEST) {
+    if (!process.env.TEST_DB_PATH) {
+      throw new Error(
+        "[db] Refusing to open production DB under vitest. " +
+          "Set TEST_DB_PATH in beforeEach (or rely on vitest setupFiles).",
+      );
+    }
+    dbPath = process.env.TEST_DB_PATH;
+  } else {
+    dbPath =
+      process.env.DB_PATH ?? path.resolve(process.cwd(), "data", "sales.db");
   }
-
-  const dbPath =
-    process.env.KMPUS_DB_PATH ??
-    path.resolve(process.cwd(), "data", "sales.db");
 
   fs.mkdirSync(path.dirname(dbPath), { recursive: true });
 

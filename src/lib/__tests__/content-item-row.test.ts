@@ -12,7 +12,7 @@ beforeEach(() => {
     os.tmpdir(),
     `kmpus-test-row-${Date.now()}-${Math.random().toString(36).slice(2)}.db`,
   );
-  process.env.KMPUS_DB_PATH = tempDbPath;
+  process.env.TEST_DB_PATH = tempDbPath;
 });
 
 afterEach(async () => {
@@ -22,7 +22,7 @@ afterEach(async () => {
     const f = tempDbPath + ext;
     if (fs.existsSync(f)) fs.unlinkSync(f);
   }
-  delete process.env.KMPUS_DB_PATH;
+  delete process.env.TEST_DB_PATH;
 });
 
 // ---------------------------------------------------------------------------

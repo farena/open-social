@@ -115,7 +115,7 @@ CREATE TABLE IF NOT EXISTS content_item_snapshots (
 CREATE INDEX IF NOT EXISTS idx_snapshots_item ON content_item_snapshots(content_item_id, created_at DESC);
 ```
 
-DB path: `data/sales.db`. Resolved via `path.resolve(process.cwd(), "data", "sales.db")`. In tests, override via env var `KMPUS_DB_PATH`.
+DB path: `data/sales.db`. Resolved via `path.resolve(process.cwd(), "data", "sales.db")`. In tests, override via env var `TEST_DB_PATH`.
 
 ---
 
@@ -127,10 +127,10 @@ DB path: `data/sales.db`. Resolved via `path.resolve(process.cwd(), "data", "sal
 - Modify: `package.json`
 - Modify: `.gitignore`
 
-- [ ] **Step 1:** Add `better-sqlite3` (latest 11.x) and `@types/better-sqlite3` to dependencies.
-- [ ] **Step 2:** Run `npm install` and confirm native build succeeds on this Linux/WSL machine.
-- [ ] **Step 3:** Append explicit DB ignore lines to `.gitignore`: `*.db`, `*.db-wal`, `*.db-shm` (defense in depth — `/data/` is already ignored).
-- [ ] **Step 4:** Commit: `chore(deps): add better-sqlite3 for content-item storage`.
+- [x] **Step 1:** Add `better-sqlite3` (latest 11.x) and `@types/better-sqlite3` to dependencies.
+- [x] **Step 2:** Run `npm install` and confirm native build succeeds on this Linux/WSL machine.
+- [x] **Step 3:** Append explicit DB ignore lines to `.gitignore`: `*.db`, `*.db-wal`, `*.db-shm` (defense in depth — `/data/` is already ignored).
+- [x] **Step 4:** Commit: `chore(deps): add better-sqlite3 for content-item storage`.
 
 **Validation:** `node -e "require('better-sqlite3')(':memory:').exec('CREATE TABLE t(x INTEGER)')"` exits 0.
 
@@ -142,14 +142,14 @@ DB path: `data/sales.db`. Resolved via `path.resolve(process.cwd(), "data", "sal
 - Create: `src/lib/db.ts`
 - Create: `src/lib/__tests__/db.test.ts`
 
-- [ ] **Step 1: Write failing test** — `db.test.ts` opens the DB via `getDb()` (with a temp `KMPUS_DB_PATH`), asserts the three tables exist (`SELECT name FROM sqlite_master WHERE type='table'`), asserts `journal_mode` is `wal`, asserts `foreign_keys` is on.
-- [ ] **Step 2: Run test, confirm fail** (`npm test -- db.test`).
-- [ ] **Step 3: Implement `db.ts`:**
-  - Export `getDb(): Database.Database` — singleton, lazy. Honor `process.env.KMPUS_DB_PATH` if set.
+- [x] **Step 1: Write failing test** — `db.test.ts` opens the DB via `getDb()` (with a temp `TEST_DB_PATH`), asserts the three tables exist (`SELECT name FROM sqlite_master WHERE type='table'`), asserts `journal_mode` is `wal`, asserts `foreign_keys` is on.
+- [x] **Step 2: Run test, confirm fail** (`npm test -- db.test`).
+- [x] **Step 3: Implement `db.ts`:**
+  - Export `getDb(): Database.Database` — singleton, lazy. Honor `process.env.TEST_DB_PATH` if set.
   - On first call: ensure `data/` exists, open the DB, set `journal_mode=WAL`, `synchronous=NORMAL`, `foreign_keys=ON`, run the `CREATE TABLE IF NOT EXISTS ...` block from the schema reference above.
   - Export `closeDb()` for tests (resets the singleton).
-- [ ] **Step 4: Run test, confirm pass.**
-- [ ] **Step 5: Commit:** `feat(db): add better-sqlite3 connection and schema init`.
+- [x] **Step 4: Run test, confirm pass.**
+- [x] **Step 5: Commit:** `feat(db): add better-sqlite3 connection and schema init`.
 
 **Edge cases:** Concurrent first-call invocations — JS is single-threaded inside the module, so a simple `let db: Database | null` guard is sufficient.
 
@@ -161,15 +161,15 @@ DB path: `data/sales.db`. Resolved via `path.resolve(process.cwd(), "data", "sal
 - Create: `src/lib/content-item-row.ts`
 - Create: `src/lib/__tests__/content-item-row.test.ts`
 
-- [ ] **Step 1: Write failing test** — round-trip a fully-populated `ContentItem` (with slides containing both `previousVersions` and `nextVersions`, hashtags, assets, referenceImages, tags, notes, chatSessionId, generatedAt) through `serializeContentItem`/`deserializeContentItem` and assert deep equality. Add a test for an item with empty optional arrays/null fields. Add a test for a slide with non-empty `nextVersions` to confirm redo state survives the round-trip.
-- [ ] **Step 2: Run test, confirm fail.**
-- [ ] **Step 3: Implement helpers:**
+- [x] **Step 1: Write failing test** — round-trip a fully-populated `ContentItem` (with slides containing both `previousVersions` and `nextVersions`, hashtags, assets, referenceImages, tags, notes, chatSessionId, generatedAt) through `serializeContentItem`/`deserializeContentItem` and assert deep equality. Add a test for an item with empty optional arrays/null fields. Add a test for a slide with non-empty `nextVersions` to confirm redo state survives the round-trip.
+- [x] **Step 2: Run test, confirm fail.**
+- [x] **Step 3: Implement helpers:**
   - `contentItemToRow(item)` returns scalar columns for `content_items`.
   - `rowToContentItem(row, slideRows)` reconstructs `ContentItem`. JSON-parse `hashtags`, `reference_images`, `assets`, `tags`. Drop optional fields when null. Convert `slide_order → order`, `legacy_html → legacyHtml`, `previous_versions → previousVersions`, `next_versions → nextVersions`.
   - `slideToRow(slide, contentItemId)` and `rowToSlide(row)` for slides — both stacks must round-trip.
   - Use the zod schema (`contentItemSchema`) to validate the deserialized item in DEV/test only (gate on `process.env.NODE_ENV !== "production"`).
-- [ ] **Step 4: Run test, confirm pass.**
-- [ ] **Step 5: Commit:** `feat(content-items): add row (de)serialization helpers`.
+- [x] **Step 4: Run test, confirm pass.**
+- [x] **Step 5: Commit:** `feat(content-items): add row (de)serialization helpers`.
 
 ---
 
@@ -179,9 +179,9 @@ DB path: `data/sales.db`. Resolved via `path.resolve(process.cwd(), "data", "sal
 - Modify: `src/lib/content-items.ts`
 - Create: `src/lib/__tests__/content-items-sqlite.test.ts`
 
-- [ ] **Step 1: Write failing tests** for the existing exported API surface (one test per function): `createContentItem`, `getContentItem`, `listContentItems`, `updateContentItem` (including auto-stamping `generatedAt` on first transition to `generated`), `deleteContentItem`, `appendSlide` (incl. `MAX_SLIDES` cap), `updateSlide` (incl. snapshot push only on visual fields, notes-only no snapshot, **`nextVersions` cleared on edit**), `deleteSlide` (incl. order recompute), `reorderSlides`, `undoSlide` (pops `previousVersions`, pushes current to `nextVersions`), **`redoSlide`** (pops `nextVersions`, pushes current to `previousVersions`), `addSlideElement`, `updateSlideElement`, `removeSlideElement`, `updateSlideBackground`, `addContentItemAsset`, `updateContentItemAsset`, `removeContentItemAsset`, `addReferenceImage`, `removeReferenceImage`. Add an explicit cap test: 26 visual edits leave `previousVersions.length === 25` (oldest dropped FIFO). All tests use a temp DB via `KMPUS_DB_PATH`.
-- [ ] **Step 2: Run test, confirm fail** — most fail because the JSON-backed implementation can't see the temp DB.
-- [ ] **Step 3: Implement** — rewrite each function to use prepared statements wrapped in `db.transaction(...)` for multi-statement ops. Patterns:
+- [x] **Step 1: Write failing tests** for the existing exported API surface (one test per function): `createContentItem`, `getContentItem`, `listContentItems`, `updateContentItem` (including auto-stamping `generatedAt` on first transition to `generated`), `deleteContentItem`, `appendSlide` (incl. `MAX_SLIDES` cap), `updateSlide` (incl. snapshot push only on visual fields, notes-only no snapshot, **`nextVersions` cleared on edit**), `deleteSlide` (incl. order recompute), `reorderSlides`, `undoSlide` (pops `previousVersions`, pushes current to `nextVersions`), **`redoSlide`** (pops `nextVersions`, pushes current to `previousVersions`), `addSlideElement`, `updateSlideElement`, `removeSlideElement`, `updateSlideBackground`, `addContentItemAsset`, `updateContentItemAsset`, `removeContentItemAsset`, `addReferenceImage`, `removeReferenceImage`. Add an explicit cap test: 26 visual edits leave `previousVersions.length === 25` (oldest dropped FIFO). All tests use a temp DB via `TEST_DB_PATH`.
+- [x] **Step 2: Run test, confirm fail** — most fail because the JSON-backed implementation can't see the temp DB.
+- [x] **Step 3: Implement** — rewrite each function to use prepared statements wrapped in `db.transaction(...)` for multi-statement ops. Patterns:
   - Reads: `SELECT` from `content_items` + `SELECT` slides ordered by `slide_order`.
   - Writes: same logic as before (snapshot rules, order recompute, MAX_SLIDES check, generatedAt stamping) but expressed as SQL. Slide `previousVersions`/`nextVersions` stay slide-level — push/pop snapshots in JS, write the updated stack JSON back to the slide row.
   - Keep `pushSnapshot`, `snapshotOf`, `applySnapshot`, `pushBounded` helpers local to this file (port from current commit `f99b6034`). Preserve `pushSnapshot`'s `slide.nextVersions = []` line — that is the "edit branches the history" invariant.
@@ -189,8 +189,8 @@ DB path: `data/sales.db`. Resolved via `path.resolve(process.cwd(), "data", "sal
   - Update `MAX_VERSIONS` import to point at the new value (25). The bound applies to **both** stacks via `pushBounded`.
   - Public function signatures and return types **must not change**.
   - `redoSlide` is exported and matches the implementation in `content-items.ts:280` of commit `f99b6034`.
-- [ ] **Step 4: Run tests, confirm pass.**
-- [ ] **Step 5: Commit:** `refactor(content-items): back CRUD with SQLite, preserve API`.
+- [x] **Step 4: Run tests, confirm pass.**
+- [x] **Step 5: Commit:** `refactor(content-items): back CRUD with SQLite, preserve API`.
 
 **Risk:** Any caller relying on identity (`===`) of the returned object across calls will break. The current code already returns fresh objects after `load()`/`save()`, so this is a non-issue, but call sites should be spot-checked.
 
@@ -201,7 +201,7 @@ DB path: `data/sales.db`. Resolved via `path.resolve(process.cwd(), "data", "sal
 **Files:**
 - Create: `scripts/migrate-content-items-to-sqlite.mjs`
 
-- [ ] **Step 1: Write the script.** Behavior:
+- [x] **Step 1: Write the script.** Behavior:
   - Args: `--dry-run` (no writes, prints summary), `--force` (skip existing-DB check).
   - Resolve `data/content-items.json` path. If missing, log + exit 0 (nothing to migrate).
   - Backup: copy JSON to `data/content-items.json.bak.<ISO timestamp>`. If `data/sales.db` exists and not `--force`, abort with instructions.
@@ -210,7 +210,7 @@ DB path: `data/sales.db`. Resolved via `path.resolve(process.cwd(), "data", "sal
   - Verify: `SELECT COUNT(*) FROM content_items` equals input length. Spot-check 3 random items: parse back via helpers, deep-equal against input.
   - When inserting slides: if the source JSON slide is missing `nextVersions` (legacy on-disk shape), default to `[]` explicitly in the INSERT — match the lazy migration in current `load()`. Do **not** rely solely on the column DEFAULT, to keep the migration self-explanatory.
   - Print report: counts, sample IDs, backup path, db path. Exit 0.
-- [ ] **Step 2: Run with `--dry-run` against the real `data/content-items.json`.** Expect a clean report.
+- [x] **Step 2: Run with `--dry-run` against the real `data/content-items.json`.** Expect a clean report.
 - [ ] **Step 3: Run for real.** Expect `data/sales.db` created and verification passing.
 - [ ] **Step 4:** Smoke check: `npm run dev`, open the dashboard, confirm content items render. Open one item, confirm slides render.
 - [ ] **Step 5: Commit:** `feat(migration): one-shot content-items.json → sqlite`.
@@ -225,7 +225,7 @@ DB path: `data/sales.db`. Resolved via `path.resolve(process.cwd(), "data", "sal
 - Create: `src/lib/content-item-snapshots.ts`
 - Create: `src/lib/__tests__/content-item-snapshots.test.ts`
 
-- [ ] **Step 1: Write failing tests:**
+- [x] **Step 1: Write failing tests:**
   - `pushItemSnapshot(itemId, trigger, label?)` inserts a row with the full serialized item as `payload`.
   - After 6 pushes for the same item, `SELECT COUNT(*)` returns 5 and the oldest is gone (FIFO by `created_at`).
   - `pushItemSnapshot` for a non-existent item returns `null` (does not throw, does not insert).
@@ -236,10 +236,10 @@ DB path: `data/sales.db`. Resolved via `path.resolve(process.cwd(), "data", "sal
     - Returns the restored `ContentItem`.
     - FIFO trim still applies after the defensive push.
   - `restoreItemSnapshot` returns `null` if either the item or the snapshot is missing.
-- [ ] **Step 2: Run tests, confirm fail.**
-- [ ] **Step 3: Implement.** Use a single `db.transaction()` for restore. `payload` stores the full `ContentItem` (with slides and their `previousVersions` arrays) as JSON. Use the helpers from Task 3 to serialize/deserialize. Constant: `export const MAX_ITEM_SNAPSHOTS = 5` (alongside `MAX_VERSIONS` from `carousel.ts` — different concept).
-- [ ] **Step 4: Run tests, confirm pass.**
-- [ ] **Step 5: Commit:** `feat(snapshots): add content-item-level versioning library`.
+- [x] **Step 2: Run tests, confirm fail.**
+- [x] **Step 3: Implement.** Use a single `db.transaction()` for restore. `payload` stores the full `ContentItem` (with slides and their `previousVersions` arrays) as JSON. Use the helpers from Task 3 to serialize/deserialize. Constant: `export const MAX_ITEM_SNAPSHOTS = 5` (alongside `MAX_VERSIONS` from `carousel.ts` — different concept).
+- [x] **Step 4: Run tests, confirm pass.**
+- [x] **Step 5: Commit:** `feat(snapshots): add content-item-level versioning library`.
 
 ---
 
@@ -248,9 +248,9 @@ DB path: `data/sales.db`. Resolved via `path.resolve(process.cwd(), "data", "sal
 **Files:**
 - Create: `src/app/api/content/[id]/versions/route.ts`
 
-- [ ] **Step 1:** Implement `GET` handler. Resolve `id` from params. If `getContentItem(id)` returns `null`, respond `404`. Otherwise return `NextResponse.json({ versions: await listItemSnapshots(id) })` — list shape `[{id, createdAt, trigger, label}]`.
-- [ ] **Step 2:** Manual smoke test: `curl -s localhost:3000/api/content/<known-id>/versions | jq` returns `{"versions": []}` for an item with no snapshots.
-- [ ] **Step 3: Commit:** `feat(api): GET /api/content/[id]/versions`.
+- [x] **Step 1:** Implement `GET` handler. Resolve `id` from params. If `getContentItem(id)` returns `null`, respond `404`. Otherwise return `NextResponse.json({ versions: await listItemSnapshots(id) })` — list shape `[{id, createdAt, trigger, label}]`.
+- [x] **Step 2:** Manual smoke test: `curl -s localhost:3000/api/content/<known-id>/versions | jq` returns `{"versions": []}` for an item with no snapshots.
+- [x] **Step 3: Commit:** `feat(api): GET /api/content/[id]/versions`.
 
 ---
 
@@ -259,9 +259,9 @@ DB path: `data/sales.db`. Resolved via `path.resolve(process.cwd(), "data", "sal
 **Files:**
 - Create: `src/app/api/content/[id]/versions/[versionId]/restore/route.ts`
 
-- [ ] **Step 1:** Implement `POST` handler. Reject if `item.state === "generating"` with `409` (a restore mid-generation would race the agent). Call `restoreItemSnapshot(id, versionId)`. If `null`, return `404`. Otherwise `200` with the restored `ContentItem`.
-- [ ] **Step 2:** Manual smoke: take a snapshot manually via `pushItemSnapshot` from a Node REPL or a temporary debug script, mutate the item via `PATCH`, restore, verify revert.
-- [ ] **Step 3: Commit:** `feat(api): POST /api/content/[id]/versions/[versionId]/restore`.
+- [x] **Step 1:** Implement `POST` handler. Reject if `item.state === "generating"` with `409` (a restore mid-generation would race the agent). Call `restoreItemSnapshot(id, versionId)`. If `null`, return `404`. Otherwise `200` with the restored `ContentItem`.
+- [x] **Step 2:** Manual smoke: take a snapshot manually via `pushItemSnapshot` from a Node REPL or a temporary debug script, mutate the item via `PATCH`, restore, verify revert.
+- [x] **Step 3: Commit:** `feat(api): POST /api/content/[id]/versions/[versionId]/restore`.
 
 ---
 
@@ -270,9 +270,9 @@ DB path: `data/sales.db`. Resolved via `path.resolve(process.cwd(), "data", "sal
 **Files:**
 - Modify: `src/app/api/content/[id]/generate/route.ts`
 
-- [ ] **Step 1:** After the `getContentItem(id)` null-check and the `state === "generating"` guard, before the `updateContentItem(id, { state: "generating", aspectRatio })` call, insert: `await pushItemSnapshot(id, "generate");`. Wrap in try/catch: log on failure but **do not abort** generation — versioning is best-effort.
-- [ ] **Step 2:** Manual smoke: trigger `POST /api/content/<id>/generate` from the UI; confirm a row appears in `content_item_snapshots` with `trigger='generate'`.
-- [ ] **Step 3: Commit:** `feat(generate): snapshot content-item before agent run`.
+- [x] **Step 1:** After the `getContentItem(id)` null-check and the `state === "generating"` guard, before the `updateContentItem(id, { state: "generating", aspectRatio })` call, insert: `await pushItemSnapshot(id, "generate");`. Wrap in try/catch: log on failure but **do not abort** generation — versioning is best-effort.
+- [x] **Step 2:** Manual smoke: trigger `POST /api/content/<id>/generate` from the UI; confirm a row appears in `content_item_snapshots` with `trigger='generate'`.
+- [x] **Step 3: Commit:** `feat(generate): snapshot content-item before agent run`.
 
 ---
 
@@ -281,9 +281,9 @@ DB path: `data/sales.db`. Resolved via `path.resolve(process.cwd(), "data", "sal
 **Files:**
 - Modify: `src/app/api/chat/route.ts`
 
-- [ ] **Step 1:** After `contentItemId` is read from the body and the corresponding item is fetched (around `route.ts:75`/`route.ts:97`), if the item exists, call `await pushItemSnapshot(contentItemId, "chat", message.slice(0, 80))`. Same try/catch pattern as Task 9.
-- [ ] **Step 2:** Manual smoke: send a chat with `contentItemId`; confirm a row appears with `trigger='chat'` and a label.
-- [ ] **Step 3: Commit:** `feat(chat): snapshot content-item before agent turn`.
+- [x] **Step 1:** After `contentItemId` is read from the body and the corresponding item is fetched (around `route.ts:75`/`route.ts:97`), if the item exists, call `await pushItemSnapshot(contentItemId, "chat", message.slice(0, 80))`. Same try/catch pattern as Task 9.
+- [x] **Step 2:** Manual smoke: send a chat with `contentItemId`; confirm a row appears with `trigger='chat'` and a label.
+- [x] **Step 3: Commit:** `feat(chat): snapshot content-item before agent turn`.
 
 **Edge:** If chat is in `mode: "content-idea"` but the item is genuinely new (just created), the snapshot will capture the empty starting state — that is fine and useful (lets the user revert to "blank").
 
@@ -295,13 +295,13 @@ DB path: `data/sales.db`. Resolved via `path.resolve(process.cwd(), "data", "sal
 - Modify: `wiki/pages/concepts/version-history.md`
 - Modify: `wiki/pages/entities/content-item-model.md`
 
-- [ ] **Step 1:** In `version-history.md`:
+- [x] **Step 1:** In `version-history.md`:
   - Update the slide-level section to describe **undo + redo** (not just undo), the `nextVersions` stack, the "edit clears nextVersions" branch invariant, and the new cap of **25** for both stacks.
   - Mention the editor persist debounce of 10 s — each "save point" produces at most one snapshot, so 25 caps ≈ 4 minutes of editing history.
   - Add a new section "Content-item-level snapshots" describing: trigger points (generate, chat), 5-FIFO retention, defensive snapshot on restore, distinction from slide-level undo/redo. Update the page intro to clarify there are now two layers.
-- [ ] **Step 2:** In `content-item-model.md`, update "Persistence" — file is now `data/sales.db`; concurrency via SQLite WAL transactions, no per-file mutex; legacy `content-items.json` kept as backup post-migration. Add `code_refs` for `src/lib/db.ts` and `src/lib/content-item-snapshots.ts`.
-- [ ] **Step 3:** Run `npx wiki-query "content item versioning"` to spot-check the index reflects the changes.
-- [ ] **Step 4: Commit:** `docs(wiki): document content-item-level versioning + sqlite persistence`.
+- [x] **Step 2:** In `content-item-model.md`, update "Persistence" — file is now `data/sales.db`; concurrency via SQLite WAL transactions, no per-file mutex; legacy `content-items.json` kept as backup post-migration. Add `code_refs` for `src/lib/db.ts` and `src/lib/content-item-snapshots.ts`.
+- [x] **Step 3:** Run `npx wiki-query "content item versioning"` to spot-check the index reflects the changes.
+- [x] **Step 4: Commit:** `docs(wiki): document content-item-level versioning + sqlite persistence`.
 
 **Note:** Do not run a full `/ingest` here — defer to the user after merge (per CLAUDE.md "offer to ingest" guidance).
 
@@ -315,20 +315,20 @@ DB path: `data/sales.db`. Resolved via `path.resolve(process.cwd(), "data", "sal
 - Modify: `src/components/editor/EditorBody.tsx`
 - Create: `src/components/editor/__tests__/useSlideEditor.test.tsx` (if not present; otherwise extend)
 
-- [ ] **Step 1:** Change `MAX_VERSIONS` in `src/types/carousel.ts` from `5` to `25`. No other code reads it — the helpers in `content-items.ts` import the constant. Verify with `grep -rn "MAX_VERSIONS" src/`.
-- [ ] **Step 2: Write failing test** — render `useSlideEditor` with a fake `onPersist`, dispatch an edit, advance fake timers by 9999 ms → `onPersist` not called; advance to 10000 ms → called once. Use `vi.useFakeTimers()`.
-- [ ] **Step 3: Run test, confirm fail.**
-- [ ] **Step 4: Implement:**
+- [x] **Step 1:** Change `MAX_VERSIONS` in `src/types/carousel.ts` from `5` to `25`. No other code reads it — the helpers in `content-items.ts` import the constant. Verify with `grep -rn "MAX_VERSIONS" src/`.
+- [x] **Step 2: Write failing test** — render `useSlideEditor` with a fake `onPersist`, dispatch an edit, advance fake timers by 9999 ms → `onPersist` not called; advance to 10000 ms → called once. Use `vi.useFakeTimers()`.
+- [x] **Step 3: Run test, confirm fail.**
+- [x] **Step 4: Implement:**
   - In `useSlideEditor.ts`, change the default `debounceMs = 400` to `debounceMs = 10000`.
   - Add a flush effect: on unmount (cleanup of the persist effect), if `persistTimerRef.current` is set, clear the timer and `await onPersist(state.slide)` synchronously-ish (kick off and let it run; do not block unmount). Track `lastSentContentRef` so we don't double-send.
   - In `EditorBody.tsx`, pass `debounceMs: 10000` explicitly to `useSlideEditor` (defense in depth so a future default change doesn't silently lengthen the window further).
   - In `EditorBody.tsx`, add a `beforeunload` listener that flushes the pending persist using `navigator.sendBeacon` *or* a synchronous `fetch` with `keepalive: true`. Goal: surviving a tab close mid-debounce. Acceptable to limit to one flush attempt — best-effort.
-- [ ] **Step 5: Run test, confirm pass.**
+- [x] **Step 5: Run test, confirm pass.**
 - [ ] **Step 6: Manual smoke:**
   - Edit a slide, watch the network tab — first PUT lands ≥10 s after the last keystroke, not before.
   - Edit, then close the tab within 5 s — verify the PUT arrives (sendBeacon).
   - Edit 26 times across multiple debounce windows (or a single batched commit followed by 25 individual changes) — check `previousVersions.length === 25` after the 26th distinct visual edit.
-- [ ] **Step 7: Commit:** `feat(editor): raise undo cap to 25 and persist debounce to 10s`.
+- [x] **Step 7: Commit:** `feat(editor): raise undo cap to 25 and persist debounce to 10s`.
 
 **Risks:**
 - Lost work on tab close — mitigated by `sendBeacon`/`keepalive` flush.
