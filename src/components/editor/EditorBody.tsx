@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, type ReactNode } from "react";
+import { useCallback, useEffect, type ReactNode } from "react";
 import { CarouselPreview } from "./CarouselPreview";
 import { PropertiesPanel } from "./PropertiesPanel";
 import { useSlideEditor } from "./useSlideEditor";
@@ -71,9 +71,45 @@ export function EditorBody({
     [contentItemId, onSlidePersisted],
   );
 
-  const { slide, selection, dispatch } = useSlideEditor(activeSlide, {
-    onPersist: persist,
-  });
+  const { slide, selection, dispatch, currentSlideRef, persistTimerRef } =
+    useSlideEditor(activeSlide, {
+      onPersist: persist,
+      debounceMs: 10000,
+    });
+
+  // Flush any pending debounced persist when the user closes/navigates away
+  // from the tab before the 10 s window expires. Uses sendBeacon when available
+  // (fire-and-forget, survives tab close), falling back to fetch with keepalive.
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      if (persistTimerRef.current === null) return; // nothing pending
+      const current = currentSlideRef.current;
+      const body = JSON.stringify({
+        background: current.background,
+        elements: current.elements,
+        ...(current.legacyHtml !== undefined
+          ? { legacyHtml: current.legacyHtml }
+          : {}),
+      });
+      const url = `/api/content/${contentItemId}/slides/${current.id}`;
+      const blob = new Blob([body], { type: "application/json" });
+      if (typeof navigator !== "undefined" && navigator.sendBeacon) {
+        navigator.sendBeacon(url, blob);
+      } else {
+        fetch(url, {
+          method: "PUT",
+          keepalive: true,
+          headers: { "Content-Type": "application/json" },
+          body,
+        }).catch(() => {
+          // best-effort — nothing to do if this fails during unload
+        });
+      }
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [contentItemId, currentSlideRef, persistTimerRef]);
 
   useEditorShortcuts({
     slide,

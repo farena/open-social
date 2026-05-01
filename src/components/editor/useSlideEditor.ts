@@ -173,13 +173,13 @@ function reducer(
 interface UseSlideEditorOptions {
   /** Called with the latest slide after a debounce window. */
   onPersist: (slide: Slide) => Promise<void> | void;
-  /** Debounce delay in ms. Default: 400. */
+  /** Debounce delay in ms. Default: 10000. */
   debounceMs?: number;
 }
 
 export function useSlideEditor(
   externalSlide: Slide,
-  { onPersist, debounceMs = 400 }: UseSlideEditorOptions,
+  { onPersist, debounceMs = 10000 }: UseSlideEditorOptions,
 ) {
   const [state, dispatch] = useReducer(reducer, {
     slide: externalSlide,
@@ -236,6 +236,7 @@ export function useSlideEditor(
     persistTimerRef.current = setTimeout(async () => {
       const snapshot = state.slide;
       lastSentContentRef.current = slideContentSignature(snapshot);
+      persistTimerRef.current = null;
       try {
         await onPersist(snapshot);
         lastPersistedRef.current = snapshot;
@@ -249,6 +250,27 @@ export function useSlideEditor(
     };
   }, [state.slide, onPersist, debounceMs]);
 
+  // Flush pending persist on unmount so in-flight edits are not lost when the
+  // user navigates away or collapses the panel before the debounce window ends.
+  // We use a ref for state.slide so the cleanup closure always sees the latest
+  // slide without re-registering the effect on every render.
+  const currentSlideRef = useRef<Slide>(state.slide);
+  currentSlideRef.current = state.slide;
+
+  useEffect(() => {
+    return () => {
+      if (persistTimerRef.current === null) return; // no pending timer
+      const current = currentSlideRef.current;
+      const currentSig = slideContentSignature(current);
+      if (lastSentContentRef.current === currentSig) return; // already sent
+      clearTimeout(persistTimerRef.current);
+      persistTimerRef.current = null;
+      // Kick off the persist without awaiting — unmount cannot be async.
+      void onPersist(current);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // Stable dispatch wrapper for callers that use it in deps arrays.
   const stableDispatch = useCallback(
     (action: SlideEditorAction) => dispatch(action),
@@ -259,5 +281,11 @@ export function useSlideEditor(
     slide: state.slide,
     selection: state.selection,
     dispatch: stableDispatch,
+    /** Ref to the current slide, used by EditorBody for the beforeunload flush. */
+    currentSlideRef,
+    /** Ref to the pending persist timer, used by EditorBody for the beforeunload flush. */
+    persistTimerRef,
+    /** Ref to the last sent content signature, used by EditorBody for the beforeunload flush. */
+    lastSentContentRef,
   };
 }

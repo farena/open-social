@@ -38,4 +38,4 @@ export const DIMENSIONS: Record<AspectRatio, { width: number; height: number }> 
 };
 
 export const MAX_SLIDES = 20;
-export const MAX_VERSIONS = 5;
+export const MAX_VERSIONS = 25;
