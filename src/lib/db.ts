@@ -51,6 +51,16 @@ let db: Database.Database | null = null;
 export function getDb(): Database.Database {
   if (db) return db;
 
+  // Belt-and-suspenders: under vitest, refuse to open the production DB even
+  // if a test forgot to set KMPUS_DB_PATH. Prevents test fixtures from leaking
+  // into data/sales.db.
+  if (process.env.VITEST && !process.env.KMPUS_DB_PATH) {
+    throw new Error(
+      "[db] Refusing to open production DB under vitest. " +
+        "Set KMPUS_DB_PATH in beforeEach (or rely on vitest setupFiles).",
+    );
+  }
+
   const dbPath =
     process.env.KMPUS_DB_PATH ??
     path.resolve(process.cwd(), "data", "sales.db");

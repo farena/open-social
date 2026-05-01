@@ -9,6 +9,7 @@ export default defineConfig({
   },
   test: {
     environment: "node",
+    setupFiles: ["./tests/setup-db.ts"],
     include: [
       "tests/**/*.test.ts",
       "scripts/**/__tests__/**/*.test.ts",
