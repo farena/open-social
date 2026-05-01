@@ -51,3 +51,8 @@ open-carrusel*.log
 
 # OS
 Thumbs.db
+
+# SQLite DB files (defense in depth — /data/ is already gitignored)
+*.db
+*.db-wal
+*.db-shm
