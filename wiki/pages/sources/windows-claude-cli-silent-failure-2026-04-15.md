@@ -1,7 +1,7 @@
 ---
 title: Source — Windows Claude CLI silent failure
 type: source
-code_refs: [src/lib/claude-path.ts, src/app/api/chat/route.ts, src/app/api/content/[id]/generate/route.ts]
+code_refs: [src/lib/claude-path.ts, src/app/api/chat/route.ts, "src/app/api/content/[id]/generate/route.ts"]
 sources: [raw/incidents/windows-claude-cli-silent-failure-2026-04-15.md]
 related: [pages/entities/chat-route.md, pages/entities/generate-route.md, pages/concepts/sse-streaming.md]
 created: 2026-04-29

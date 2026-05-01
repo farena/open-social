@@ -1,4 +1,4 @@
-last-ingest-commit: 4c5459fb54058368ea0daa295cb86a0ba40b8c9d
+last-ingest-commit: 5df93555857c1ca086eab57b72ca56ba0ad87d0c
 
 # Wiki operation log
 
@@ -10,3 +10,5 @@ last-ingest-commit: 4c5459fb54058368ea0daa295cb86a0ba40b8c9d
 ## [2026-05-01] ingest | wiki-query-frontmatter-preprocessor — 2 pages touched (raw decision + sources page) + index entry
 ## [2026-05-01] run-ingest | 30e6f2b..f99b603 — 2 units, 5 pages touched, 0 raw entries
 ## [2026-05-01] run-ingest | f99b603..4c5459f — 2 units, 1 page touched, 1 raw entry
+## [2026-05-01] run-ingest | 4c5459f..5df9355 — 1 unit, 2 pages touched, 0 raw entries
+## [2026-05-01] lint | 8 frontmatter quoting fixes (paths with `[id]`/`[slideId]` were unquoted YAML, breaking flow-sequence parse); 0 broken links, 0 stale code_refs, 0 orphans

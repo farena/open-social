@@ -1,7 +1,7 @@
 ---
 title: Append-only agent contract during generation
 type: concept
-code_refs: [src/app/api/content/[id]/slides/[slideId]/route.ts, src/lib/content-generation-system-prompt.ts]
+code_refs: ["src/app/api/content/[id]/slides/[slideId]/route.ts", src/lib/content-generation-system-prompt.ts]
 sources: [raw/decisions/append-only-agent-contract-2026-04-26.md]
 related: [pages/entities/generate-route.md, pages/entities/content-routes.md, pages/entities/content-item-model.md]
 created: 2026-04-29

@@ -1,7 +1,7 @@
 ---
 title: Version history — slide-level undo/redo + content-item-level snapshots
 type: concept
-code_refs: [src/lib/content-items.ts, src/types/carousel.ts, src/app/api/content/[id]/slides/[slideId]/undo/route.ts, src/app/api/content/[id]/slides/[slideId]/redo/route.ts, src/lib/content-item-snapshots.ts, src/app/api/content/[id]/versions/route.ts, src/app/api/content/[id]/versions/[versionId]/restore/route.ts]
+code_refs: [src/lib/content-items.ts, src/types/carousel.ts, "src/app/api/content/[id]/slides/[slideId]/undo/route.ts", "src/app/api/content/[id]/slides/[slideId]/redo/route.ts", src/lib/content-item-snapshots.ts, "src/app/api/content/[id]/versions/route.ts", "src/app/api/content/[id]/versions/[versionId]/restore/route.ts"]
 sources: []
 related: [pages/entities/content-item-model.md, pages/entities/content-routes.md, pages/entities/slide-editor.md, pages/entities/generate-route.md, pages/entities/chat-route.md]
 created: 2026-04-29
@@ -44,7 +44,7 @@ A `SlideSnapshot` is `{ background, elements, legacyHtml? }` — exactly the vis
 
 `pushBounded` in `src/lib/content-items.ts` shifts the oldest snapshot out when a stack would exceed `MAX_VERSIONS = 25`. Both `previousVersions` and `nextVersions` use the same cap via `pushBounded`. There is no compaction strategy beyond this — older edits are simply lost.
 
-The editor persist debounce is **10 s** (raised from 400 ms as part of the SQLite migration plan). Each keystroke burst produces at most one snapshot per debounce window, so 25 cap slots represent roughly ≈ 4 minutes of continuous active editing before the oldest visual checkpoint is evicted.
+The editor persist debounce is **5 s** (originally 400 ms; bumped to 10 s with the SQLite migration, then halved to 5 s for tighter "Saved" badge feedback in the preview — see `5df9355`). Each keystroke burst produces at most one snapshot per debounce window, so 25 cap slots represent roughly ≈ 2 minutes of continuous active editing before the oldest visual checkpoint is evicted.
 
 ### Undo / redo
 
@@ -136,3 +136,4 @@ CREATE INDEX IF NOT EXISTS idx_snapshots_item ON content_item_snapshots(content_
 
 - 2026-05-01 (`f99b603`) — Added `nextVersions` stack, `redoSlide`, `POST /redo` route, and Undo/Redo toolbar buttons. Lazy migration for pre-existing slides.
 - 2026-05-01 (SQLite migration plan) — Raised `MAX_VERSIONS` cap from 5 to 25; bumped editor persist debounce from 400 ms to 10 s. Added content-item-level snapshots layer (`content-item-snapshots.ts`, `GET /versions`, `POST .../restore`). Persistence moved to `data/sales.db`.
+- 2026-05-01 (`5df9355`) — Lowered persist debounce from 10 s to 5 s and surfaced a "Saved" badge in `CarouselPreview` on each successful PUT. Halves the worst-case "edit in flight" window per debounce.

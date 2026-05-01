@@ -1,7 +1,7 @@
 ---
 title: Export pipeline
 type: entity
-code_refs: [src/lib/export-slides.ts, src/lib/fonts.ts, src/app/api/content/[id]/export/route.ts, src/components/editor/ExportButton.tsx]
+code_refs: [src/lib/export-slides.ts, src/lib/fonts.ts, "src/app/api/content/[id]/export/route.ts", src/components/editor/ExportButton.tsx]
 sources: [raw/incidents/puppeteer-heavy-font-timeout-2026-04-29.md]
 related: [pages/entities/structured-slide-pipeline.md, pages/concepts/structured-slide-model.md]
 created: 2026-04-29

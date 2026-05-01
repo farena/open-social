@@ -1,7 +1,7 @@
 ---
 title: Source — Append-only agent contract during generation
 type: source
-code_refs: [src/app/api/content/[id]/slides/[slideId]/route.ts, src/lib/content-generation-system-prompt.ts, src/app/api/content/[id]/generate/route.ts]
+code_refs: ["src/app/api/content/[id]/slides/[slideId]/route.ts", src/lib/content-generation-system-prompt.ts, "src/app/api/content/[id]/generate/route.ts"]
 sources: [raw/decisions/append-only-agent-contract-2026-04-26.md]
 related: [pages/concepts/append-only-agent-contract.md, pages/entities/generate-route.md, pages/entities/content-routes.md]
 created: 2026-04-29

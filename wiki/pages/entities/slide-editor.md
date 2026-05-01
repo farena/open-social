@@ -1,7 +1,7 @@
 ---
 title: Slide editor (canvas + overlay)
 type: entity
-code_refs: [src/components/editor/SlideCanvas.tsx, src/components/editor/SlideOverlay.tsx, src/components/editor/PropertiesPanel.tsx, src/components/editor/LayersPanel.tsx, src/components/editor/Toolbar.tsx, src/components/editor/useSlideEditor.ts, src/components/editor/useEditorShortcuts.ts, src/components/editor/EditorBody.tsx, src/components/editor/SlideRenderer.tsx, src/components/editor/SlideFilmstrip.tsx]
+code_refs: [src/components/editor/SlideCanvas.tsx, src/components/editor/SlideOverlay.tsx, src/components/editor/PropertiesPanel.tsx, src/components/editor/LayersPanel.tsx, src/components/editor/Toolbar.tsx, src/components/editor/useSlideEditor.ts, src/components/editor/useEditorShortcuts.ts, src/components/editor/EditorBody.tsx, src/components/editor/CarouselPreview.tsx, src/components/editor/SlideRenderer.tsx, src/components/editor/SlideFilmstrip.tsx]
 sources: [raw/decisions/structured-slide-model-2026-04-25.md, raw/decisions/keepalive-put-vs-sendbeacon-2026-05-01.md]
 related: [pages/entities/structured-slide-pipeline.md, pages/concepts/structured-slide-model.md, pages/concepts/version-history.md]
 created: 2026-04-29
@@ -51,3 +51,4 @@ The editor's in-flight `slide` (live reducer state, ahead of the persisted row) 
 - 2026-05-01 (`f99b603`) — Toolbar gained Undo / Redo buttons in the top-right action cluster; `useEditorShortcuts` added `Cmd/Ctrl+Shift+Z` for redo. Both wire through to the new `/redo` route alongside the existing `/undo`. The buttons are disabled when the active slide's respective stack is empty.
 - 2026-05-01 (`707c67e`) — Tab-close flush switched from `sendBeacon` to `fetch` with `keepalive: true` because the slide endpoint is PUT-only; gated on `lastSentContentRef` to suppress duplicate sends.
 - 2026-05-01 (`4c5459f`) — `EditorBody` exposes `onLiveSlideChange`; the page splices the live slide into `item.slides` so `FullscreenPreview` and `SlideFilmstrip` show unsaved edits before the debounce fires.
+- 2026-05-01 (`5df9355`) — Persist debounce lowered from 10 s to 5 s; `CarouselPreview` shows a transient "Saved" badge in the top-right whenever a PUT succeeds (`savedAt` prop bubbled from `EditorBody`).

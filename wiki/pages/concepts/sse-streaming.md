@@ -1,7 +1,7 @@
 ---
 title: SSE streaming pattern
 type: concept
-code_refs: [src/app/api/chat/route.ts, src/app/api/content/[id]/generate/route.ts, src/lib/use-chat-stream.ts, src/app/content/[id]/page.tsx]
+code_refs: [src/app/api/chat/route.ts, "src/app/api/content/[id]/generate/route.ts", src/lib/use-chat-stream.ts, "src/app/content/[id]/page.tsx"]
 sources: [raw/incidents/windows-claude-cli-silent-failure-2026-04-15.md]
 related: [pages/entities/chat-route.md, pages/entities/generate-route.md]
 created: 2026-04-29

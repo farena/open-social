@@ -1,7 +1,7 @@
 ---
 title: Generate route — POST /api/content/[id]/generate
 type: entity
-code_refs: [src/app/api/content/[id]/generate/route.ts, src/lib/content-generation-system-prompt.ts, src/lib/claude-path.ts, src/app/content/[id]/page.tsx, src/components/content/ContentItemDetailIdea.tsx]
+code_refs: ["src/app/api/content/[id]/generate/route.ts", src/lib/content-generation-system-prompt.ts, src/lib/claude-path.ts, "src/app/content/[id]/page.tsx", src/components/content/ContentItemDetailIdea.tsx]
 sources: [raw/decisions/append-only-agent-contract-2026-04-26.md, raw/incidents/windows-claude-cli-silent-failure-2026-04-15.md]
 related: [pages/entities/content-item-model.md, pages/entities/chat-route.md, pages/concepts/sse-streaming.md, pages/concepts/append-only-agent-contract.md]
 created: 2026-04-29
