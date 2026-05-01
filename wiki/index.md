@@ -28,6 +28,7 @@ Karpathy-style LLM wiki. Pages are compiled at ingest time from decisions, incid
 - [rebrand-open-social-2026-04-26](pages/sources/rebrand-open-social-2026-04-26.md)
 - [windows-claude-cli-silent-failure-2026-04-15](pages/sources/windows-claude-cli-silent-failure-2026-04-15.md)
 - [puppeteer-heavy-font-timeout-2026-04-29](raw/incidents/puppeteer-heavy-font-timeout-2026-04-29.md)
+- [wiki-query-frontmatter-preprocessor-2026-05-01](pages/sources/wiki-query-frontmatter-preprocessor-2026-05-01.md)
 
 ## Comparisons
 
