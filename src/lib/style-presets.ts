@@ -1,46 +1,89 @@
-import { readDataSafe, writeData } from "./data";
+import { getDb } from "./db";
 import { generateId, now } from "./utils";
-import type { StylePreset, StylePresetsData } from "@/types/style-preset";
+import type { StylePreset } from "@/types/style-preset";
 
-const FILE = "style-presets.json";
+// ---------------------------------------------------------------------------
+// Row shape
+// ---------------------------------------------------------------------------
 
-async function load(): Promise<StylePresetsData> {
-  return readDataSafe<StylePresetsData>(FILE, { presets: [] });
+interface StylePresetRow {
+  id: string;
+  name: string;
+  description: string | null;
+  payload: string; // JSON of Omit<StylePreset, "id" | "name" | "description" | "createdAt">
+  created_at: string;
 }
 
-async function save(data: StylePresetsData): Promise<void> {
-  await writeData(FILE, data);
+// ---------------------------------------------------------------------------
+// (De)serialization helpers
+// ---------------------------------------------------------------------------
+
+function presetToRow(preset: StylePreset): StylePresetRow {
+  const { id, name, description, createdAt, ...rest } = preset;
+  return {
+    id,
+    name,
+    description: description ?? null,
+    payload: JSON.stringify(rest),
+    created_at: createdAt,
+  };
 }
+
+function rowToPreset(row: StylePresetRow): StylePreset {
+  const payload = JSON.parse(row.payload) as Omit<
+    StylePreset,
+    "id" | "name" | "description" | "createdAt"
+  >;
+  return {
+    id: row.id,
+    name: row.name,
+    description: row.description ?? "",
+    createdAt: row.created_at,
+    ...payload,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Public API
+// ---------------------------------------------------------------------------
 
 export async function listPresets(): Promise<StylePreset[]> {
-  const data = await load();
-  return data.presets;
+  const db = getDb();
+  const rows = db
+    .prepare("SELECT * FROM style_presets ORDER BY created_at ASC")
+    .all() as StylePresetRow[];
+  return rows.map(rowToPreset);
 }
 
 export async function getPreset(id: string): Promise<StylePreset | null> {
-  const data = await load();
-  return data.presets.find((p) => p.id === id) ?? null;
+  const db = getDb();
+  const row = db
+    .prepare("SELECT * FROM style_presets WHERE id = ?")
+    .get(id) as StylePresetRow | undefined;
+  return row ? rowToPreset(row) : null;
 }
 
 export async function createPreset(
   params: Omit<StylePreset, "id" | "createdAt">
 ): Promise<StylePreset> {
-  const data = await load();
+  const db = getDb();
   const preset: StylePreset = {
     ...params,
     id: generateId(),
     createdAt: now(),
   };
-  data.presets.push(preset);
-  await save(data);
+  const row = presetToRow(preset);
+  db.prepare(`
+    INSERT INTO style_presets (id, name, description, payload, created_at)
+    VALUES (@id, @name, @description, @payload, @created_at)
+  `).run(row);
   return preset;
 }
 
 export async function deletePreset(id: string): Promise<boolean> {
-  const data = await load();
-  const idx = data.presets.findIndex((p) => p.id === id);
-  if (idx === -1) return false;
-  data.presets.splice(idx, 1);
-  await save(data);
-  return true;
+  const db = getDb();
+  const result = db
+    .prepare("DELETE FROM style_presets WHERE id = ?")
+    .run(id);
+  return result.changes > 0;
 }
