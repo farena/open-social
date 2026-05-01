@@ -1,11 +1,11 @@
 ---
 title: Structured slide model — JSON is the source of truth
 type: concept
-code_refs: [src/types/slide-model.ts, src/lib/slide-serializer.ts, src/lib/slide-html.ts, src/components/editor/SlideOverlay.tsx]
+code_refs: [src/types/slide-model.ts, src/lib/slide-serializer.ts, src/lib/slide-html.ts, src/components/editor/SlideOverlay.tsx, src/components/editor/useSlideEditor.ts]
 sources: [raw/decisions/structured-slide-model-2026-04-25.md]
 related: [pages/entities/structured-slide-pipeline.md, pages/entities/slide-editor.md]
 created: 2026-04-29
-updated: 2026-04-29
+updated: 2026-05-01
 confidence: high
 ---
 
@@ -33,3 +33,23 @@ Each element's `scssStyles` is **native CSS with nesting** (`&` selectors), not 
 - Cross-frame DOM scraping during edits (fragile under sandbox).
 - "Regenerate the entire HTML" agent edits (loses fine-grained control + version history).
 - Round-tripping HTML edits back into JSON (the migrator runs once, not on every save).
+
+## Persist round-trip and echo absorption
+
+The editor (`useSlideEditor`) is the local source of truth while the user types; the server is the durable source of truth across sessions. Reconciling the two requires distinguishing **foreign upstream changes** (chat IA rewrote the slide, navigated to a different slide) from **server echoes of the editor's own pending writes**.
+
+Two refs:
+- `lastPersistedRef` — identity of the last `Slide` we accepted from upstream or persisted ourselves.
+- `lastSentContentRef` — JSON content signature (`background` + `elements` + `legacyHtml`) of the most recent value we sent via `onPersist`.
+
+When `externalSlide` changes:
+1. Same identity as `lastPersistedRef` → no-op.
+2. Different `slide.id` → foreign navigation, `SET_SLIDE` and reset.
+3. Same id, content signature matches `lastSentContentRef` → server echo of our own debounced PUT; absorb silently (do **not** dispatch `SET_SLIDE`) so any keystrokes typed during the round-trip survive.
+4. Same id, content signature differs → foreign edit (e.g. agent rewrote the slide), last-write-wins via `SET_SLIDE`.
+
+This is why content-signature comparison is load-bearing: relying on object identity alone caused mid-typing data loss whenever the parent re-fed us the server's response object.
+
+## Recent changes
+
+- 2026-05-01 (`c552e67`) — Documented the persist round-trip / echo-absorption invariant after `useSlideEditor` switched from identity-only checks to content-signature comparison.
