@@ -39,16 +39,16 @@ Resuelve GHSA-qx2v-qp2m-jg93 (XSS por `</style>` no escapado en stringify de Pos
 - Modify: `package.json` (`dependencies.next`, `devDependencies.eslint-config-next`)
 - Modify: `package-lock.json` (regenerado por npm)
 
-- [ ] **Step 1: Bump next y eslint-config-next**
+- [x] **Step 1: Bump next y eslint-config-next**
   ```bash
   npm i next@16.2.4 eslint-config-next@16.2.4
   ```
-- [ ] **Step 2: Confirmar que los advisories de postcss desaparecieron**
+- [x] **Step 2: Confirmar que los advisories de postcss desaparecieron**
   ```bash
   npm audit --json | jq '.vulnerabilities | keys'
   ```
   Esperado: `postcss` y `next` ya no figuran. Solo queda `basic-ftp`.
-- [ ] **Step 3: Type-check + tests + build**
+- [x] **Step 3: Type-check + tests + build**
   ```bash
   npm run lint
   npm test
@@ -60,7 +60,7 @@ Resuelve GHSA-qx2v-qp2m-jg93 (XSS por `</style>` no escapado en stringify de Pos
   npm run dev
   ```
   Verificar en `http://localhost:3000` que el dashboard carga, se puede abrir un content item, que un slide se renderiza dentro del iframe sandbox y que `POST /api/content/[id]/generate` sigue funcionando (puede ser un kick de prueba sin esperar el render completo).
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
   ```
   fix(deps): bump next to 16.2.4 to patch postcss XSS advisory
 
@@ -82,28 +82,28 @@ Resuelve GHSA-rp42-5vxx-qpwr (`basic-ftp <=5.2.2` DoS por consumo de memoria) he
 - Modify: `package.json` (`dependencies.puppeteer`)
 - Modify: `package-lock.json`
 
-- [ ] **Step 1: Ver versión actual y target**
+- [x] **Step 1: Ver versión actual y target**
   ```bash
   npm view puppeteer version
   npm ls puppeteer
   ```
-- [ ] **Step 2: Bump puppeteer**
+- [x] **Step 2: Bump puppeteer**
   ```bash
   npm i puppeteer@latest
   ```
   Nota: el `postinstall` de `puppeteer` descarga Chromium; puede tardar varios minutos y requiere red.
-- [ ] **Step 3: Confirmar que `npm audit` queda en cero**
+- [x] **Step 3: Confirmar que `npm audit` queda en cero**
   ```bash
   npm audit
   ```
   Esperado: `found 0 vulnerabilities`.
-- [ ] **Step 4: Probar el path crítico — export de slides**
+- [x] **Step 4: Probar el path crítico — export de slides**
   El único uso real de Puppeteer es `src/lib/export-slides.ts` (invocado desde `POST /api/content/[id]/export`). Probar que el ZIP de PNGs se genera para al menos un content item con varios slides. Si hay tests E2E del export, correrlos; si no, probar manualmente desde la UI.
   ```bash
   npm test
   npm run build
   ```
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
   ```
   fix(deps): bump puppeteer to patch basic-ftp DoS advisory
 
@@ -125,18 +125,18 @@ Resuelve GHSA-rp42-5vxx-qpwr (`basic-ftp <=5.2.2` DoS por consumo de memoria) he
 - Modify: `package.json` (mover 3 entradas de `dependencies` a `devDependencies`)
 - Modify: `package-lock.json`
 
-- [ ] **Step 1: Verificar que no haya imports en `src/`**
+- [x] **Step 1: Verificar que no haya imports en `src/`**
   ```bash
   grep -RnE "from ['\"](node-html-parser|gray-matter|minisearch)" src/ || echo "OK — sin uso en src/"
   ```
   Esperado: `OK`. Si aparece algún import en `src/`, **abortar la tarea** y dejar las deps en `dependencies` — no aplica.
-- [ ] **Step 2: Mover las entradas en `package.json`**
+- [x] **Step 2: Mover las entradas en `package.json`**
   Editar a mano `package.json`: quitar `gray-matter`, `minisearch`, `node-html-parser` de `dependencies` y agregarlas en `devDependencies` con la misma versión.
-- [ ] **Step 3: Regenerar lockfile**
+- [x] **Step 3: Regenerar lockfile**
   ```bash
   npm i
   ```
-- [ ] **Step 4: Validar**
+- [x] **Step 4: Validar**
   ```bash
   npm test
   npm run build
@@ -144,7 +144,7 @@ Resuelve GHSA-rp42-5vxx-qpwr (`basic-ftp <=5.2.2` DoS por consumo de memoria) he
   npm audit --omit=dev
   ```
   Esperado: el bundle de prod ya no incluye estos paquetes (`npm ls --omit=dev gray-matter minisearch node-html-parser` debería marcar `(empty)`); el script `wiki:query` sigue funcionando porque `tsx` y devDeps están disponibles en local.
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
   ```
   chore(deps): move wiki-query tooling to devDependencies
 
