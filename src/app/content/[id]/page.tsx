@@ -15,7 +15,7 @@ import { FullscreenPreview } from "@/components/editor/FullscreenPreview";
 import { ContentItemDetailIdea } from "@/components/content/ContentItemDetailIdea";
 import { ContentItemDetailModal } from "@/components/content/ContentItemDetailModal";
 import type { ContentItem } from "@/types/content-item";
-import type { AspectRatio } from "@/types/carousel";
+import type { AspectRatio, Slide } from "@/types/carousel";
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -34,6 +34,9 @@ export default function ContentItemPage({ params }: PageProps) {
   const [showSafeZones, setShowSafeZones] = useState(false);
   const [showFullscreen, setShowFullscreen] = useState(false);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
+  // Mirrors the editor's in-flight slide so the fullscreen preview and the
+  // filmstrip can show unsaved edits before the 10s persist debounce fires.
+  const [liveSlide, setLiveSlide] = useState<Slide | null>(null);
 
   const [confirmState, setConfirmState] = useState<{
     open: boolean;
@@ -343,7 +346,13 @@ export default function ContentItemPage({ params }: PageProps) {
 
   // --- Generating / Generated state: show editor ---
 
-  const activeSlideForToolbar = item.slides[activeSlide];
+  // Splice the live edited slide into item.slides so consumers outside the
+  // editor (FullscreenPreview, SlideFilmstrip) reflect unsaved changes.
+  const liveSlides = liveSlide
+    ? item.slides.map((s) => (s.id === liveSlide.id ? liveSlide : s))
+    : item.slides;
+
+  const activeSlideForToolbar = liveSlides[activeSlide];
   const toolbar = (
     <Toolbar
       aspectRatio={item.aspectRatio}
@@ -405,7 +414,7 @@ export default function ContentItemPage({ params }: PageProps) {
       <FullscreenPreview
         open={showFullscreen}
         onOpenChange={setShowFullscreen}
-        slides={item.slides}
+        slides={liveSlides}
         aspectRatio={item.aspectRatio}
         activeIndex={activeSlide}
         onActiveChange={setActiveSlide}
@@ -471,6 +480,7 @@ export default function ContentItemPage({ params }: PageProps) {
                   : prev
               );
             }}
+            onLiveSlideChange={setLiveSlide}
             toolbar={toolbar}
             belowPreview={captionPanel}
           />
@@ -478,7 +488,7 @@ export default function ContentItemPage({ params }: PageProps) {
       </div>
 
       <SlideFilmstrip
-        slides={item.slides}
+        slides={liveSlides}
         aspectRatio={item.aspectRatio}
         activeIndex={activeSlide}
         onActiveChange={setActiveSlide}

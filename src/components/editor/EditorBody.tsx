@@ -15,6 +15,10 @@ interface EditorBodyProps {
   onActiveChange: (index: number) => void;
   showSafeZones?: boolean;
   onSlidePersisted?: (slide: Slide) => void;
+  /** Fires whenever the in-editor live slide changes, so the page can mirror
+   * unsaved edits into FullscreenPreview / SlideFilmstrip before the debounced
+   * persist runs. */
+  onLiveSlideChange?: (slide: Slide) => void;
   onUndoSlide?: (slideId: string) => void;
   onRedoSlide?: (slideId: string) => void;
   /** Mounted between the canvas column and the PropertiesPanel (e.g. caption). */
@@ -40,6 +44,7 @@ export function EditorBody({
   onActiveChange,
   showSafeZones = false,
   onSlidePersisted,
+  onLiveSlideChange,
   onUndoSlide,
   onRedoSlide,
   belowPreview,
@@ -125,6 +130,12 @@ export function EditorBody({
     onUndoRequest: onUndoSlide ? () => onUndoSlide(slide.id) : undefined,
     onRedoRequest: onRedoSlide ? () => onRedoSlide(slide.id) : undefined,
   });
+
+  // Bubble the live slide up so FullscreenPreview / SlideFilmstrip can render
+  // unsaved edits without waiting for the 10s persist debounce.
+  useEffect(() => {
+    onLiveSlideChange?.(slide);
+  }, [slide, onLiveSlideChange]);
 
   return (
     <>
