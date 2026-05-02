@@ -3,9 +3,9 @@ title: ContentItem model
 type: entity
 code_refs: [src/types/content-item.ts, src/lib/content-items.ts, src/lib/content-item-schema.ts, src/types/carousel.ts, src/lib/db.ts, src/lib/content-item-row.ts, src/lib/content-item-snapshots.ts]
 sources: [raw/decisions/carousel-to-content-item-pivot-2026-04-26.md]
-related: [pages/entities/content-routes.md, pages/entities/generate-route.md, pages/entities/slide-editor.md, pages/entities/structured-slide-pipeline.md, pages/concepts/version-history.md, pages/concepts/append-only-agent-contract.md, pages/concepts/storage-architecture.md]
+related: [pages/entities/content-routes.md, pages/entities/generate-route.md, pages/entities/slide-editor.md, pages/entities/structured-slide-pipeline.md, pages/entities/export-pipeline.md, pages/concepts/version-history.md, pages/concepts/append-only-agent-contract.md, pages/concepts/storage-architecture.md, pages/concepts/migrations.md]
 created: 2026-04-29
-updated: 2026-05-01
+updated: 2026-05-02
 confidence: high
 ---
 
@@ -22,7 +22,7 @@ Defined in `src/types/content-item.ts`:
 - Copy fields: `hook`, `bodyIdea`, `caption`, `hashtags[]`, optional `notes`.
 - Visual: `aspectRatio` (`1:1` / `4:5` / `9:16`) + `slides: Slide[]`.
 - Optional context: `chatSessionId`, `referenceImages[]`, `assets[]`, `tags[]`.
-- Audit: `createdAt`, `updatedAt`, optional `generatedAt`.
+- Audit: `createdAt`, `updatedAt`, optional `generatedAt`, `downloaded: boolean` (set true after the export route ships the ZIP — see [[entities/export-pipeline]]).
 
 Slides are still defined in `src/types/carousel.ts` (re-exported by `content-item.ts`) — only the parent entity changed during the pivot.
 
@@ -32,6 +32,7 @@ Slides are still defined in `src/types/carousel.ts` (re-exported by `content-ite
 
 - `createContentItem(input)` always lands in `state: "idea"` regardless of input (see `src/lib/content-items.ts`).
 - `updateContentItem(id, patch)` auto-stamps `generatedAt` on the first transition into `"generated"`. Does **not** create a content-item-level snapshot — snapshot triggers are limited to agent entry points (`/generate`, `/chat`). See [[concepts/version-history]].
+- `markContentItemDownloaded(id)` flips `downloaded = 1` and bumps `updated_at` in a single statement; called by the export route after the ZIP is built. Returns `null` if the row is missing.
 - `appendSlide` enforces `MAX_SLIDES` (20, from `src/types/carousel.ts`) silently — returns `null` if exceeded.
 - `updateSlide` snapshots into `previousVersions` only when an *editable* field changes (background, elements, legacyHtml) — `notes` updates do not consume undo budget. Any visual edit also clears `nextVersions` (the "edit branches redo history" invariant). See [[concepts/version-history]].
 - `undoSlide` pops `previousVersions`, pushes current state to `nextVersions`. `redoSlide` is the mirror (added in commit `f99b603`).
@@ -66,7 +67,8 @@ CREATE TABLE IF NOT EXISTS content_items (
   tags             TEXT,
   created_at       TEXT NOT NULL,
   updated_at       TEXT NOT NULL,
-  generated_at     TEXT
+  generated_at     TEXT,
+  downloaded       INTEGER NOT NULL DEFAULT 0
 );
 
 CREATE TABLE IF NOT EXISTS slides (
@@ -91,7 +93,7 @@ CREATE TABLE IF NOT EXISTS content_item_snapshots (
 );
 ```
 
-- **Migration**: `scripts/migrate-content-items-to-sqlite.mjs` — one-shot, reads `data/content-items.json`, backs it up to `data/content-items.json.bak.<ISO timestamp>` (kept as rollback artifact), inserts all items + slides in a single transaction, then spot-checks counts and 3 random round-trips. Run with `--dry-run` first; pass `--force` to overwrite an existing DB. The original JSON file is never deleted.
+- **Migrations**: forward changes go through the migration runner at `scripts/migrate.ts` — see [[concepts/migrations]]. The `downloaded` column was added by `migrations/20260502120000-add-downloaded-to-content-items.ts`. The original JSON-to-SQLite conversion was a one-shot at `scripts/migrate-content-items-to-sqlite.mjs` (reads `data/content-items.json`, backs it up to `data/content-items.json.bak.<ISO timestamp>`, inserts in a single transaction, supports `--dry-run` / `--force`).
 - **Rollback path**: stop the dev server, `rm data/sales.db`, restore `data/content-items.json.bak.<timestamp>` to `data/content-items.json`, revert Task 4 of the SQLite migration plan.
 
 ## Content-item-level snapshots
@@ -108,3 +110,4 @@ A separate versioning layer (coarser than slide-level undo) stores full `Content
 - 2026-05-01 (`f99b603`) — `redoSlide` added; `nextVersions` stack lands on slide rows.
 - 2026-05-01 (SQLite migration plan) — Persistence moved from `data/content-items.json` to `data/sales.db` (better-sqlite3). `async-mutex` removed for ContentItem writes. Content-item-level snapshot layer added (`content-item-snapshots.ts`). Row helpers in `src/lib/content-item-row.ts`. Slide-level undo/redo cap raised to 25.
 - 2026-05-01 (JSON resources migration) — All remaining JSON-backed resources migrated to `data/sales.db`. `src/lib/data.ts` deleted. See [[concepts/storage-architecture]].
+- 2026-05-02 (`54e3db5`) — `downloaded: boolean` field added to the model and `content_items` table; `markContentItemDownloaded(id)` lib helper introduced; export route now flips the flag after building the ZIP. Schema change rides the new migration runner — see [[concepts/migrations]].

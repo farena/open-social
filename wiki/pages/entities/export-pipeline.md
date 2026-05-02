@@ -5,7 +5,7 @@ code_refs: [src/lib/export-slides.ts, src/lib/fonts.ts, "src/app/api/content/[id
 sources: [raw/incidents/puppeteer-heavy-font-timeout-2026-04-29.md]
 related: [pages/entities/structured-slide-pipeline.md, pages/concepts/structured-slide-model.md]
 created: 2026-04-29
-updated: 2026-04-29
+updated: 2026-05-02
 confidence: medium
 ---
 
@@ -17,7 +17,7 @@ Renders structured slides to PNG via Puppeteer and ships them as a ZIP. Same `wr
 
 - **`src/lib/export-slides.ts`** — owns the singleton Puppeteer browser, `exportSlide()` (serialize → wrap → setContent → screenshot), and `exportAllSlides()` (concurrency-controlled batching with progress callbacks). Inlines `/uploads/*` images as data URIs before handing HTML to the page.
 - **`src/lib/fonts.ts`** — server-side Google Fonts CSS cache + `@font-face` inliner. Uses `buildGoogleFontsFamilyParam` from `slide-html.ts` so cached/inlined Material Symbols match the variable-axis behavior the preview uses.
-- **`src/app/api/content/[id]/export/route.ts`** — POST endpoint. Streams progress and returns the ZIP. Per `content-routes.md`.
+- **`src/app/api/content/[id]/export/route.ts`** — POST endpoint. Renders all slides, builds the ZIP in-memory, calls `markContentItemDownloaded(id)` (flips `downloaded = 1` on the content item — see [[entities/content-item-model]]) just before returning the ZIP. Per `content-routes.md`.
 - **`src/components/editor/ExportButton.tsx`** — client-side trigger. Builds a download anchor, calls the route, deferred-revokes the blob URL.
 
 ## Invariants
@@ -40,3 +40,4 @@ Renders structured slides to PNG via Puppeteer and ships them as a ZIP. Same `wr
 ## Recent changes
 
 - 2026-04-29 (`e2ff372`) — Switched font wait from per-`FontFace` enumeration to `document.fonts.ready`; added `protocolTimeout` and `--disable-dev-shm-usage`; concurrency drops to 1 for heavy-icon-font carousels; deferred `URL.revokeObjectURL` to fix download cancellation. See incident page.
+- 2026-05-02 (`54e3db5`) — Export route now calls `markContentItemDownloaded(item.id)` after the ZIP is built and before the response is returned, so the dashboard "Downloaded" filter reflects shipped items.

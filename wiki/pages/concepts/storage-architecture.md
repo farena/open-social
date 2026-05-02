@@ -1,10 +1,10 @@
 ---
 title: Storage architecture — unified SQLite
 type: concept
-code_refs: [src/lib/db.ts, src/lib/kv-config.ts, src/lib/brand.ts, src/lib/templates.ts, src/lib/style-presets.ts, src/lib/assets.ts, src/lib/staged-actions.ts, src/lib/content-items.ts, src/lib/content-item-snapshots.ts, scripts/migrate-content-items-to-sqlite.mjs, scripts/migrate-json-resources-to-sqlite.mjs]
-related: [pages/entities/content-item-model.md, pages/concepts/version-history.md]
+code_refs: [src/lib/db.ts, src/lib/kv-config.ts, src/lib/brand.ts, src/lib/templates.ts, src/lib/style-presets.ts, src/lib/assets.ts, src/lib/staged-actions.ts, src/lib/content-items.ts, src/lib/content-item-snapshots.ts, scripts/migrate.ts, scripts/migrate-content-items-to-sqlite.mjs, scripts/migrate-json-resources-to-sqlite.mjs]
+related: [pages/entities/content-item-model.md, pages/concepts/version-history.md, pages/concepts/migrations.md]
 created: 2026-05-01
-updated: 2026-05-01
+updated: 2026-05-02
 confidence: high
 ---
 
@@ -86,7 +86,16 @@ Use when the resource is a list of records with stable IDs, list/get/create/dele
 
 It was the sole IO layer for `brand.json`, `business-context.json`, `templates.json`, `style-presets.json`, `assets.json`, and `staged-actions.json`. All callers were migrated to SQLite in phase 2; the file was then deleted with no remaining imports.
 
-## Migration history
+## Schema evolution
+
+Two distinct paths into `data/sales.db`:
+
+- **Bootstrap** — `getDb()` runs `SCHEMA_SQL` (in `src/lib/db.ts`) on first open. This is the path used by tests and any fresh checkout. `SCHEMA_SQL` always reflects the current schema.
+- **Forward migrations** — `scripts/migrate.ts` applies pending files in `migrations/` against an existing DB. Each file exports `up(db)` / `down(db)` and is tracked in a `migrations` table. Use `npm run migrate:test` to iterate without touching the dev DB. See [[concepts/migrations]].
+
+The two paths must converge on the same schema. When a migration adds a column or table, edit `SCHEMA_SQL` in lockstep.
+
+## Migration history (one-shot JSON conversions)
 
 ### Phase 1 — ContentItems to SQLite
 
@@ -121,3 +130,4 @@ Prior to phase 1, every resource used `async-mutex` + atomic rename to prevent c
 
 - 2026-05-01 (phase 1) — `content_items`, `slides`, `content_item_snapshots` migrated from `data/content-items.json`.
 - 2026-05-01 (phase 2) — `kv_config`, `templates`, `style_presets`, `assets`, `staged_actions` migrated from six JSON files. `src/lib/data.ts` deleted.
+- 2026-05-02 (`54e3db5`) — Migration runner introduced (`scripts/migrate.ts`); first forward migration adds `downloaded` to `content_items`. Bootstrap (`SCHEMA_SQL`) and migration paths must now stay in sync — see [[concepts/migrations]].

@@ -21,6 +21,7 @@ Karpathy-style LLM wiki. Pages are compiled at ingest time from decisions, incid
 - [append-only-agent-contract](pages/concepts/append-only-agent-contract.md) — agent may POST slides, server rejects PUT/DELETE during `generating`
 - [version-history](pages/concepts/version-history.md) — bounded per-slide snapshot stacks (`previousVersions` + `nextVersions`), server-side undo / redo
 - [storage-architecture](pages/concepts/storage-architecture.md) — unified SQLite DB (`data/sales.db`), eight tables, singleton vs. collection pattern, test isolation, migration history
+- [migrations](pages/concepts/migrations.md) — Sequelize-style runner at `scripts/migrate.ts`, `migrations/` files with `up`/`down`, separate dev/test DB targets
 
 ## Sources
 
@@ -31,6 +32,8 @@ Karpathy-style LLM wiki. Pages are compiled at ingest time from decisions, incid
 - [windows-claude-cli-silent-failure-2026-04-15](pages/sources/windows-claude-cli-silent-failure-2026-04-15.md)
 - [puppeteer-heavy-font-timeout-2026-04-29](raw/incidents/puppeteer-heavy-font-timeout-2026-04-29.md)
 - [wiki-query-frontmatter-preprocessor-2026-05-01](pages/sources/wiki-query-frontmatter-preprocessor-2026-05-01.md)
+- [keepalive-put-vs-sendbeacon-2026-05-01](raw/decisions/keepalive-put-vs-sendbeacon-2026-05-01.md)
+- [migration-runner-2026-05-02](raw/decisions/migration-runner-2026-05-02.md)
 
 ## Comparisons
 
