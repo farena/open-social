@@ -32,6 +32,7 @@ export interface ContentItem {
   createdAt: string;
   updatedAt: string;
   generatedAt?: string;
+  downloaded: boolean;
 }
 
 export const DEFAULT_ASPECT_RATIO_FOR_TYPE: Record<

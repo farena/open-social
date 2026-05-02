@@ -115,6 +115,7 @@ function makeFullContentItem(): ContentItem {
     createdAt: "2026-01-01T00:00:00.000Z",
     updatedAt: "2026-01-02T00:00:00.000Z",
     generatedAt: "2026-01-02T01:00:00.000Z",
+    downloaded: true,
   };
 }
 
@@ -141,6 +142,7 @@ function makeMinimalContentItem(): ContentItem {
     ],
     createdAt: "2026-02-01T00:00:00.000Z",
     updatedAt: "2026-02-01T00:00:00.000Z",
+    downloaded: false,
     // notes, chatSessionId, referenceImages, assets, tags, generatedAt — all absent
   };
 }

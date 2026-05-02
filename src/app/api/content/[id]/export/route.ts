@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import archiver from "archiver";
-import { getContentItem } from "@/lib/content-items";
+import { getContentItem, markContentItemDownloaded } from "@/lib/content-items";
 import { exportAllSlides } from "@/lib/export-slides";
 
 export const runtime = "nodejs";
@@ -72,6 +72,8 @@ export async function POST(
     });
 
     const safeName = hookToFilename(item.hook);
+
+    await markContentItemDownloaded(item.id);
 
     return new Response(new Uint8Array(zipBuffer), {
       headers: {

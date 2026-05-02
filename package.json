@@ -24,7 +24,11 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "wiki:query": "tsx scripts/wiki-query/cli.ts",
-    "migrate:content-items": "node scripts/migrate-content-items-to-sqlite.mjs"
+    "migrate:content-items": "node scripts/migrate-content-items-to-sqlite.mjs",
+    "migrate": "tsx scripts/migrate.ts up",
+    "migrate:undo": "tsx scripts/migrate.ts undo",
+    "migrate:test": "tsx scripts/migrate.ts up --test",
+    "migrate:test:undo": "tsx scripts/migrate.ts undo --test"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",

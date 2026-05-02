@@ -47,6 +47,7 @@ All at localhost:3000:
 - iframe slides always use `sandbox=""` attribute (no JavaScript execution)
 - The Claude subprocess gets `--allowedTools Bash WebFetch` and uses curl to call local API routes
 - Wiki search: `npx wiki-query "..."` (Node BM25, no LLM). See `scripts/wiki-query/README.md`.
+- DB migrations: Sequelize-style runner at `scripts/migrate.ts`. Migration files live in `migrations/` named `YYYYMMDDHHMMSS-description.ts` and export `up(db)` / `down(db)` (better-sqlite3 connection). Tracked in the `migrations` table. Each step runs in a `BEGIN IMMEDIATE` transaction. Commands: `npm run migrate` / `npm run migrate:undo` operate on the dev DB (`data/sales.db`); `npm run migrate:test` / `npm run migrate:test:undo` operate on a dedicated test DB (`TEST_DB_PATH` env or `data/test.db`) — **always use the `:test` variants when validating or iterating on a migration**. `SCHEMA_SQL` in `src/lib/db.ts` is the parallel bootstrap for fresh DBs and tests; keep both in sync when adding schema changes. Full docs in `migrations/README.md`.
 
 ## Wiki-first workflow
 

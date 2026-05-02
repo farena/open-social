@@ -33,6 +33,7 @@ function makeContentItem(overrides: Partial<ContentItem> = {}): ContentItem {
     tags: ["tag-a", "tag-b"],
     createdAt: "2026-01-01T00:00:00.000Z",
     updatedAt: "2026-01-01T00:00:00.000Z",
+    downloaded: false,
     ...overrides,
   };
 }

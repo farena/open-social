@@ -34,6 +34,7 @@ export interface ContentItemRow {
   created_at: string;
   updated_at: string;
   generated_at: string | null;
+  downloaded: number; // 0 | 1
 }
 
 export interface SlideRow {
@@ -74,6 +75,7 @@ export function contentItemToRow(item: ContentItem): ContentItemRow {
     created_at: item.createdAt,
     updated_at: item.updatedAt,
     generated_at: item.generatedAt ?? null,
+    downloaded: item.downloaded ? 1 : 0,
   };
 }
 
@@ -140,6 +142,7 @@ export function rowToContentItem(
     slides,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
+    downloaded: row.downloaded === 1,
   };
 
   if (row.notes !== null) item.notes = row.notes;

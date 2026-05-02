@@ -1,8 +1,15 @@
-import Database from "better-sqlite3";
-import fs from "node:fs";
-import path from "node:path";
+import type Database from "better-sqlite3";
 
-const SCHEMA_SQL = `
+/**
+ * Initial schema. Mirrors the v0 layout that existed before any
+ * migration was tracked. All statements use IF NOT EXISTS so that
+ * running this against a database that was already bootstrapped (by
+ * `SCHEMA_SQL` in src/lib/db.ts) is a no-op rather than an error.
+ *
+ * Subsequent migrations evolve this schema (e.g. add columns).
+ */
+
+const SCHEMA = `
 CREATE TABLE IF NOT EXISTS content_items (
   id               TEXT PRIMARY KEY,
   type             TEXT NOT NULL,
@@ -19,8 +26,7 @@ CREATE TABLE IF NOT EXISTS content_items (
   tags             TEXT,
   created_at       TEXT NOT NULL,
   updated_at       TEXT NOT NULL,
-  generated_at     TEXT,
-  downloaded       INTEGER NOT NULL DEFAULT 0
+  generated_at     TEXT
 );
 
 CREATE TABLE IF NOT EXISTS slides (
@@ -94,45 +100,23 @@ CREATE TABLE IF NOT EXISTS staged_actions (
 CREATE INDEX IF NOT EXISTS idx_staged_actions_status ON staged_actions(status);
 `;
 
-let db: Database.Database | null = null;
+const TABLES = [
+  "staged_actions",
+  "assets",
+  "style_presets",
+  "templates",
+  "kv_config",
+  "content_item_snapshots",
+  "slides",
+  "content_items",
+];
 
-export function getDb(): Database.Database {
-  if (db) return db;
-
-  // Under vitest, only read TEST_DB_PATH — never DB_PATH. Prevents test
-  // fixtures from leaking into the production DB even if a test forgets
-  // its own beforeEach (the global setup at tests/setup-db.ts seeds a
-  // fallback TEST_DB_PATH for this exact case).
-  let dbPath: string;
-  if (process.env.VITEST) {
-    if (!process.env.TEST_DB_PATH) {
-      throw new Error(
-        "[db] Refusing to open production DB under vitest. " +
-          "Set TEST_DB_PATH in beforeEach (or rely on vitest setupFiles).",
-      );
-    }
-    dbPath = process.env.TEST_DB_PATH;
-  } else {
-    dbPath =
-      process.env.DB_PATH ?? path.resolve(process.cwd(), "data", "sales.db");
-  }
-
-  fs.mkdirSync(path.dirname(dbPath), { recursive: true });
-
-  db = new Database(dbPath);
-
-  db.pragma("journal_mode = WAL");
-  db.pragma("synchronous = NORMAL");
-  db.pragma("foreign_keys = ON");
-
-  db.exec(SCHEMA_SQL);
-
-  return db;
+export function up(db: Database.Database): void {
+  db.exec(SCHEMA);
 }
 
-export function closeDb(): void {
-  if (db) {
-    db.close();
-    db = null;
+export function down(db: Database.Database): void {
+  for (const table of TABLES) {
+    db.exec(`DROP TABLE IF EXISTS ${table}`);
   }
 }

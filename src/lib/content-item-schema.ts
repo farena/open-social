@@ -44,6 +44,7 @@ export const contentItemSchema = z.object({
   createdAt: z.string(),
   updatedAt: z.string(),
   generatedAt: z.string().optional(),
+  downloaded: z.boolean(),
 });
 
 export const contentItemPatchSchema = z.object({

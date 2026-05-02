@@ -170,16 +170,17 @@ export async function createContentItem(
     slides: [],
     createdAt: now(),
     updatedAt: now(),
+    downloaded: false,
   };
 
   const row = contentItemToRow(item);
   db.prepare(`
     INSERT INTO content_items
       (id, type, state, aspect_ratio, hook, body_idea, caption, hashtags,
-       notes, chat_session_id, reference_images, assets, tags, created_at, updated_at, generated_at)
+       notes, chat_session_id, reference_images, assets, tags, created_at, updated_at, generated_at, downloaded)
     VALUES
       (@id, @type, @state, @aspect_ratio, @hook, @body_idea, @caption, @hashtags,
-       @notes, @chat_session_id, @reference_images, @assets, @tags, @created_at, @updated_at, @generated_at)
+       @notes, @chat_session_id, @reference_images, @assets, @tags, @created_at, @updated_at, @generated_at, @downloaded)
   `).run(row);
 
   return item;
@@ -233,6 +234,24 @@ export async function updateContentItem(
   `).run(row);
 
   return updated;
+}
+
+// ---------------------------------------------------------------------------
+// markContentItemDownloaded
+// ---------------------------------------------------------------------------
+
+export async function markContentItemDownloaded(
+  id: string,
+): Promise<ContentItem | null> {
+  const db = getDb();
+  const timestamp = now();
+  const result = db
+    .prepare(
+      "UPDATE content_items SET downloaded = 1, updated_at = ? WHERE id = ?",
+    )
+    .run(timestamp, id);
+  if (result.changes === 0) return null;
+  return fetchContentItem(id);
 }
 
 // ---------------------------------------------------------------------------

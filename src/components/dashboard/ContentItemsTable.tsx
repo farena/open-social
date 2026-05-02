@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from "react";
 import Link from "next/link";
-import { Plus, Trash2, Hash } from "lucide-react";
+import { Plus, Trash2, Hash, Check, ArrowUp, ArrowDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
@@ -44,6 +44,19 @@ function stateBadgeClass(state: ContentItemState): string {
   });
 }
 
+function formatDate(iso: string): string {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "—";
+  return d.toLocaleDateString(undefined, {
+    year: "numeric",
+    month: "short",
+    day: "2-digit",
+  });
+}
+
+type DownloadedFilter = "all" | "yes" | "no";
+type SortDir = "desc" | "asc";
+
 // ─── props ───────────────────────────────────────────────────────────────────
 
 interface ContentItemsTableProps {
@@ -62,6 +75,9 @@ export function ContentItemsTable({
   // filter state
   const [typeFilter, setTypeFilter] = useState<"all" | ContentItemType>("all");
   const [stateFilter, setStateFilter] = useState<"all" | ContentItemState>("all");
+  const [downloadedFilter, setDownloadedFilter] =
+    useState<DownloadedFilter>("all");
+  const [sortDir, setSortDir] = useState<SortDir>("desc");
 
   // confirm-delete state
   const [pendingDelete, setPendingDelete] = useState<{
@@ -70,12 +86,19 @@ export function ContentItemsTable({
   } | null>(null);
 
   const filtered = useMemo(() => {
-    return items.filter((item) => {
+    const matched = items.filter((item) => {
       if (typeFilter !== "all" && item.type !== typeFilter) return false;
       if (stateFilter !== "all" && item.state !== stateFilter) return false;
+      if (downloadedFilter === "yes" && !item.downloaded) return false;
+      if (downloadedFilter === "no" && item.downloaded) return false;
       return true;
     });
-  }, [items, typeFilter, stateFilter]);
+
+    return matched.slice().sort((a, b) => {
+      const cmp = a.createdAt.localeCompare(b.createdAt);
+      return sortDir === "asc" ? cmp : -cmp;
+    });
+  }, [items, typeFilter, stateFilter, downloadedFilter, sortDir]);
 
   const selectClass =
     "h-8 rounded-lg border border-border bg-surface px-2 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 cursor-pointer";
@@ -116,6 +139,19 @@ export function ContentItemsTable({
             <option value="idea">Idea</option>
             <option value="generating">Generating</option>
             <option value="generated">Generated</option>
+          </select>
+
+          <select
+            className={selectClass}
+            value={downloadedFilter}
+            onChange={(e) =>
+              setDownloadedFilter(e.target.value as DownloadedFilter)
+            }
+            aria-label="Filter by downloaded"
+          >
+            <option value="all">All downloads</option>
+            <option value="yes">Downloaded</option>
+            <option value="no">Not downloaded</option>
           </select>
         </div>
       </div>
@@ -164,6 +200,26 @@ export function ContentItemsTable({
                   Hashtags
                 </th>
                 <th className="text-left px-4 py-2 font-medium">State</th>
+                <th className="text-left px-4 py-2 font-medium whitespace-nowrap">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setSortDir((d) => (d === "asc" ? "desc" : "asc"))
+                    }
+                    className="inline-flex items-center gap-1 uppercase tracking-wide text-xs font-medium hover:text-foreground transition-colors cursor-pointer"
+                    aria-label={`Sort by created ${sortDir === "asc" ? "ascending" : "descending"}`}
+                  >
+                    Created
+                    {sortDir === "asc" ? (
+                      <ArrowUp className="h-3 w-3" />
+                    ) : (
+                      <ArrowDown className="h-3 w-3" />
+                    )}
+                  </button>
+                </th>
+                <th className="text-left px-4 py-2 font-medium whitespace-nowrap">
+                  Downloaded
+                </th>
                 <th className="px-4 py-2" />
               </tr>
             </thead>
@@ -249,6 +305,36 @@ export function ContentItemsTable({
                       >
                         {STATE_LABELS[item.state]}
                       </Badge>
+                    </Link>
+                  </td>
+
+                  {/* Created at */}
+                  <td className="px-4 py-3 text-muted-foreground whitespace-nowrap text-xs">
+                    <Link
+                      href={"/content/" + item.id}
+                      className="block"
+                      title={item.createdAt}
+                    >
+                      {formatDate(item.createdAt)}
+                    </Link>
+                  </td>
+
+                  {/* Downloaded */}
+                  <td className="px-4 py-3 whitespace-nowrap">
+                    <Link href={"/content/" + item.id} className="block">
+                      {item.downloaded ? (
+                        <Check
+                          className="h-4 w-4 text-green-600"
+                          aria-label="Downloaded"
+                        />
+                      ) : (
+                        <span
+                          className="text-xs text-muted-foreground"
+                          aria-label="Not downloaded"
+                        >
+                          —
+                        </span>
+                      )}
                     </Link>
                   </td>
 
