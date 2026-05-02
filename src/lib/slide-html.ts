@@ -93,3 +93,24 @@ export function wrapSlideHtml(
 </body>
 </html>`;
 }
+
+/**
+ * Extract `@import` rules from a CSS string and return them separately.
+ * `@import` must appear at the top level of a stylesheet, not inside a selector
+ * block. Google Fonts URLs often contain semicolons (e.g. `wght@600;700`), so
+ * we match the quoted string rather than stopping at the first `;`.
+ */
+export function extractCssImports(css: string): {
+  imports: string;
+  body: string;
+} {
+  const collected: string[] = [];
+  const body = css.replace(
+    /@import\s+(?:url\(["'][^"']*["']\)|["'][^"']*["'])[^;]*;/g,
+    (match) => {
+      collected.push(match);
+      return "";
+    },
+  );
+  return { imports: collected.join("\n"), body };
+}

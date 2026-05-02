@@ -11,6 +11,7 @@ import {
 import {
   extractFontFamilies,
   buildGoogleFontsFamilyParam,
+  extractCssImports,
 } from "@/lib/slide-html";
 import { interpolate } from "@/lib/component-interpolation";
 import { cn } from "@/lib/utils";
@@ -36,6 +37,8 @@ function wrapComponentHtml(
   }
 
   const safeCss = (css ?? "").replace(/<\/style/gi, "");
+  const { imports, body: cssBody } = extractCssImports(safeCss);
+  const importBlock = imports ? imports + "\n" : "";
   // The preview-only background is set on `html` so the user's CSS on `body`
   // (interpolated via `body { ... }`) can override it explicitly when needed.
   return `<!DOCTYPE html>
@@ -45,10 +48,10 @@ function wrapComponentHtml(
   <meta name="viewport" content="width=${width}, initial-scale=1">
   ${fontBlock}
   <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
+    ${importBlock}* { margin: 0; padding: 0; box-sizing: border-box; }
     html, body { width: ${width}px; height: ${height}px; overflow: hidden; }
     html { background: ${previewBg}; }
-    body { ${safeCss} }
+    body { ${cssBody} }
   </style>
 </head>
 <body>

@@ -1,6 +1,7 @@
 import type { AspectRatio, Slide } from "@/types/carousel";
 import { DIMENSIONS } from "@/types/carousel";
 import { interpolate } from "@/lib/component-interpolation";
+import { extractCssImports } from "@/lib/slide-html";
 
 export type SerializableSlide = Pick<
   Slide,
@@ -99,8 +100,10 @@ function baseWrapperStyle(el: SlideElement): string {
 function scopedStyleBlock(id: string, css: string | undefined): string {
   if (!css || !css.trim()) return "";
   const safe = css.replace(/<\/style/gi, "");
+  const { imports, body } = extractCssImports(safe);
   const selector = `[data-element-id="${escapeAttr(id)}"]`;
-  return `<style>${selector} { ${safe} }</style>`;
+  const importBlock = imports ? imports + "\n" : "";
+  return `<style>${importBlock}${selector} { ${body} }</style>`;
 }
 
 function backgroundCss(bg: BackgroundElement): string {

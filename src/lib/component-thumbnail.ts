@@ -2,7 +2,7 @@ import puppeteer from "puppeteer";
 import path from "node:path";
 import { mkdir, writeFile } from "node:fs/promises";
 import { interpolate } from "./component-interpolation";
-import { extractFontFamilies, buildGoogleFontsFamilyParam } from "./slide-html";
+import { extractFontFamilies, buildGoogleFontsFamilyParam, extractCssImports } from "./slide-html";
 import type { Component } from "@/types/component";
 
 const THUMB_DIR = path.resolve(process.cwd(), "public/uploads/component-thumbs");
@@ -21,6 +21,8 @@ function wrapComponentHtml(
   }
 
   const safeCss = (css ?? "").replace(/<\/style/gi, "");
+  const { imports, body: cssBody } = extractCssImports(safeCss);
+  const importBlock = imports ? imports + "\n" : "";
   return `<!DOCTYPE html>
 <html>
 <head>
@@ -28,9 +30,9 @@ function wrapComponentHtml(
   <meta name="viewport" content="width=${width}, initial-scale=1">
   ${fontBlock}
   <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
+    ${importBlock}* { margin: 0; padding: 0; box-sizing: border-box; }
     html, body { width: ${width}px; height: ${height}px; overflow: hidden; }
-    body { ${safeCss} }
+    body { ${cssBody} }
   </style>
 </head>
 <body>
