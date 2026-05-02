@@ -59,18 +59,19 @@ export function useEditorShortcuts({
 
       const meta = e.metaKey || e.ctrlKey;
 
-      // Cmd/Ctrl+Z — server undo
+      // Cmd/Ctrl+Z — server undo. Skip if there's nothing to undo (avoid
+      // pointless POST + 404 from the API).
       if (meta && e.key.toLowerCase() === "z" && !e.shiftKey) {
-        if (onUndoRequest) {
+        if (onUndoRequest && slide.previousVersions.length > 0) {
           e.preventDefault();
           onUndoRequest();
         }
         return;
       }
 
-      // Cmd/Ctrl+Shift+Z — server redo
+      // Cmd/Ctrl+Shift+Z — server redo. Same gate.
       if (meta && e.shiftKey && e.key.toLowerCase() === "z") {
-        if (onRedoRequest) {
+        if (onRedoRequest && (slide.nextVersions?.length ?? 0) > 0) {
           e.preventDefault();
           onRedoRequest();
         }

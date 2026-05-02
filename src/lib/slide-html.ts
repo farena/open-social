@@ -4,28 +4,36 @@ import { DIMENSIONS } from "@/types/carousel";
 /**
  * Extract Google Font family names from slide HTML.
  * Looks for font-family declarations in inline styles and <style> tags.
+ *
+ * Captures everything between `font-family:` and the next `;` or `}` (or end
+ * of an inline `style="..."` attribute), then splits on commas and strips
+ * surrounding quotes. Handles single-line and multi-line CSS uniformly.
  */
 export function extractFontFamilies(html: string): string[] {
   const families = new Set<string>();
-  // Match font-family: "Font Name" or font-family: 'Font Name' or font-family: Font Name
-  const regex = /font-family:\s*['"]?([^;'"}\n]+?)['"]?\s*[;}"]/g;
-  let match;
+  const generics = new Set([
+    "serif",
+    "sans-serif",
+    "monospace",
+    "cursive",
+    "fantasy",
+    "system-ui",
+    "ui-serif",
+    "ui-sans-serif",
+    "ui-monospace",
+    "ui-rounded",
+    "inherit",
+    "initial",
+    "unset",
+    "revert",
+    "revert-layer",
+  ]);
+  const regex = /font-family\s*:\s*([^;}"']*(?:(?:'[^']*'|"[^"]*")[^;}"']*)*)/g;
+  let match: RegExpExecArray | null;
   while ((match = regex.exec(html)) !== null) {
     const raw = match[1].trim();
-    // Split on commas and take non-generic font names
-    const generics = new Set([
-      "serif",
-      "sans-serif",
-      "monospace",
-      "cursive",
-      "fantasy",
-      "system-ui",
-      "inherit",
-      "initial",
-      "unset",
-    ]);
     for (const part of raw.split(",")) {
-      const name = part.trim().replace(/['"]/g, "");
+      const name = part.trim().replace(/^['"]|['"]$/g, "");
       if (name && !generics.has(name.toLowerCase())) {
         families.add(name);
       }

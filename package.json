@@ -49,6 +49,7 @@
     "minisearch": "^7.1.1",
     "monaco-editor": "^0.55.1",
     "next": "^16.2.4",
+    "prettier": "^3.8.3",
     "puppeteer": "^24.42.0",
     "react": "19.2.4",
     "react-dom": "19.2.4",
