@@ -1,6 +1,6 @@
 "use client";
 
-import { Bookmark, Eye, Grid3X3, Maximize2, Redo2, Trash2, Undo2 } from "lucide-react";
+import { Bookmark, Boxes, Eye, Grid3X3, Maximize2, Redo2, Trash2, Undo2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AspectRatioSelector } from "./AspectRatioSelector";
 import { ExportButton } from "./ExportButton";
@@ -23,6 +23,7 @@ interface ToolbarProps {
   onRedoSlide?: () => void;
   undoCount?: number;
   redoCount?: number;
+  onInsertComponent?: () => void;
 }
 
 /**
@@ -46,6 +47,7 @@ export function Toolbar({
   onRedoSlide,
   undoCount = 0,
   redoCount = 0,
+  onInsertComponent,
 }: ToolbarProps) {
   const canUndo = !!onUndoSlide && undoCount > 0;
   const canRedo = !!onRedoSlide && redoCount > 0;
@@ -85,6 +87,18 @@ export function Toolbar({
           <Redo2 className="h-3.5 w-3.5" />
         </Button>
       </div>
+      {onInsertComponent && (
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={onInsertComponent}
+          className="text-muted-foreground"
+          aria-label="Insertar componente"
+          title="Insertar componente desde la biblioteca"
+        >
+          <Boxes className="h-3.5 w-3.5" />
+        </Button>
+      )}
       <Button
         variant="ghost"
         size="sm"

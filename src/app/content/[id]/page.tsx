@@ -14,6 +14,7 @@ import { CaptionPanel } from "@/components/editor/CaptionPanel";
 import { FullscreenPreview } from "@/components/editor/FullscreenPreview";
 import { ContentItemDetailIdea } from "@/components/content/ContentItemDetailIdea";
 import { ContentItemDetailModal } from "@/components/content/ContentItemDetailModal";
+import { ComponentInsertModal } from "@/components/library/ComponentInsertModal";
 import type { ContentItem } from "@/types/content-item";
 import type { AspectRatio, Slide } from "@/types/carousel";
 
@@ -34,6 +35,7 @@ export default function ContentItemPage({ params }: PageProps) {
   const [showSafeZones, setShowSafeZones] = useState(false);
   const [showFullscreen, setShowFullscreen] = useState(false);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
+  const [insertComponentOpen, setInsertComponentOpen] = useState(false);
   // Mirrors the editor's in-flight slide so the fullscreen preview and the
   // filmstrip can show unsaved edits before the 5s persist debounce fires.
   const [liveSlide, setLiveSlide] = useState<Slide | null>(null);
@@ -385,6 +387,9 @@ export default function ContentItemPage({ params }: PageProps) {
       }
       undoCount={activeSlideForToolbar?.previousVersions.length ?? 0}
       redoCount={activeSlideForToolbar?.nextVersions?.length ?? 0}
+      onInsertComponent={
+        activeSlideForToolbar ? () => setInsertComponentOpen(true) : undefined
+      }
     />
   );
 
@@ -436,6 +441,16 @@ export default function ContentItemPage({ params }: PageProps) {
         contentItem={item}
         onSaved={(updated) => setItem(updated)}
       />
+
+      {activeSlideForToolbar && (
+        <ComponentInsertModal
+          contentItemId={id}
+          slideId={activeSlideForToolbar.id}
+          open={insertComponentOpen}
+          onClose={() => setInsertComponentOpen(false)}
+          onInserted={() => fetchItem()}
+        />
+      )}
 
       <div className="flex-1 flex min-h-0 overflow-hidden" id="main-editor-area">
         {/* Chat panel */}

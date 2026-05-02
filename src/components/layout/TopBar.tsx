@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
-import { ArrowLeft, Layers, BookOpen } from "lucide-react";
+import { ArrowLeft, Layers, BookOpen, Boxes } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface TopBarProps {
@@ -86,6 +86,16 @@ export function TopBar({
           title="Business context"
         >
           <BookOpen className="h-4 w-4" />
+        </Button>
+      </Link>
+      <Link href="/components">
+        <Button
+          variant="ghost"
+          size="icon"
+          aria-label="Components library"
+          title="Components library"
+        >
+          <Boxes className="h-4 w-4" />
         </Button>
       </Link>
     </header>

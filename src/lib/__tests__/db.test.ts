@@ -135,6 +135,40 @@ describe("getDb()", () => {
     expect(indexes).toContain("idx_staged_actions_status");
   });
 
+  it("creates the components table with all expected columns", async () => {
+    const { getDb } = await import("@/lib/db");
+    const db = getDb();
+    const tables = db
+      .prepare("SELECT name FROM sqlite_master WHERE type='table'")
+      .all()
+      .map((r: unknown) => (r as { name: string }).name);
+    expect(tables).toContain("components");
+
+    const columns = db
+      .prepare("PRAGMA table_info(components)")
+      .all()
+      .map((r: unknown) => (r as { name: string }).name);
+
+    const expectedColumns = [
+      "id",
+      "name",
+      "description",
+      "html_content",
+      "scss_styles",
+      "parameters_schema",
+      "width",
+      "height",
+      "thumbnail_url",
+      "tags",
+      "created_at",
+      "updated_at",
+    ];
+    for (const col of expectedColumns) {
+      expect(columns, `expected column "${col}" to exist in components table`).toContain(col);
+    }
+    expect(columns).toHaveLength(expectedColumns.length);
+  });
+
   it("returns the same instance on repeated calls (singleton)", async () => {
     const { getDb } = await import("@/lib/db");
     const db1 = getDb();

@@ -7,6 +7,7 @@ import { buildContextChatSystemPrompt } from "@/lib/context-chat-system-prompt";
 import { buildIdeationSystemPrompt } from "@/lib/ideation-system-prompt";
 import { buildContentIdeaSystemPrompt } from "@/lib/content-idea-system-prompt";
 import { listAssets } from "@/lib/assets";
+import { listComponents } from "@/lib/components";
 import { getBrand } from "@/lib/brand";
 import { getBusinessContext } from "@/lib/business-context";
 import { getContentItem } from "@/lib/content-items";
@@ -95,15 +96,16 @@ export async function POST(request: NextRequest) {
         "[chat] mode 'carousel' is deprecated, use 'content-generation'"
       );
     }
-    const [brand, businessContext, contentItem, stylePreset, assets] = await Promise.all([
+    const [brand, businessContext, contentItem, stylePreset, assets, components] = await Promise.all([
       getBrand(),
       getBusinessContext(),
       contentItemId ? getContentItem(contentItemId) : Promise.resolve(null),
       stylePresetId ? getPreset(stylePresetId) : Promise.resolve(null),
       listAssets(),
+      listComponents(),
     ]);
     resolvedContentItem = contentItem;
-    systemPrompt = buildSystemPrompt(brand, contentItem, stylePreset, businessContext, assets);
+    systemPrompt = buildSystemPrompt(brand, contentItem, stylePreset, businessContext, assets, components);
     agentName = "content-generation-chat";
   }
 

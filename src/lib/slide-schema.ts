@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { parameterTypeSchema } from "./component-schema";
 
 /**
  * zod schemas mirroring `src/types/slide-model.ts`. Used to validate inputs at
@@ -6,6 +7,12 @@ import { z } from "zod";
  * migration. Keep this file in sync with the TS types — `z.infer<typeof X>`
  * should match the manual interfaces.
  */
+
+/**
+ * Regex for valid parameter/interpolation keys: must start with a letter or
+ * underscore, followed by letters, digits, or underscores only.
+ */
+const PARAM_KEY_REGEX = /^[a-zA-Z_][a-zA-Z0-9_]*$/;
 
 const hexColor = z.string().min(1);
 
@@ -61,6 +68,8 @@ export const containerElementSchema = z.object({
   ...elementBase,
   kind: z.literal("container"),
   htmlContent: z.string(),
+  parameters: z.record(z.string().regex(PARAM_KEY_REGEX), z.string()).optional(),
+  parameterTypes: z.record(z.string().regex(PARAM_KEY_REGEX), parameterTypeSchema).optional(),
 });
 
 export const imageElementSchema = z.object({
@@ -105,6 +114,8 @@ const elementCommonPatch = z
     scssStyles: z.string(),
     htmlContent: z.string(),
     src: z.string().min(1),
+    parameters: z.record(z.string().regex(PARAM_KEY_REGEX), z.string()),
+    parameterTypes: z.record(z.string().regex(PARAM_KEY_REGEX), parameterTypeSchema),
   })
   .partial();
 

@@ -1,5 +1,6 @@
 import type { AspectRatio, Slide } from "@/types/carousel";
 import { DIMENSIONS } from "@/types/carousel";
+import { interpolate } from "@/lib/component-interpolation";
 
 export type SerializableSlide = Pick<
   Slide,
@@ -59,10 +60,13 @@ function renderElement(el: SlideElement): string {
 }
 
 function renderContainer(el: ContainerElement): string {
+  const params = el.parameters ?? {};
+  const htmlContent = interpolate(el.htmlContent ?? "", params);
+  const scssStyles = el.scssStyles ? interpolate(el.scssStyles, params) : el.scssStyles;
   const id = escapeAttr(el.id);
   const wrapperStyle = baseWrapperStyle(el);
-  const scoped = scopedStyleBlock(el.id, el.scssStyles);
-  return `<div data-element-id="${id}" data-element-kind="container" style="${wrapperStyle}">${scoped}${el.htmlContent ?? ""}</div>`;
+  const scoped = scopedStyleBlock(el.id, scssStyles);
+  return `<div data-element-id="${id}" data-element-kind="container" style="${wrapperStyle}">${scoped}${htmlContent}</div>`;
 }
 
 function renderImage(el: ImageElement): string {

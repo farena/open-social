@@ -75,11 +75,11 @@ Tasks are numbered in execution order. Tasks marked **[parallel-safe]** can run 
 - Modify: `src/lib/db.ts`
 - Test: `src/lib/__tests__/db.test.ts` (add a case asserting `components` table exists with expected columns)
 
-- [ ] **Step 1:** Add a Vitest case in `db.test.ts` that opens a fresh test DB, queries `PRAGMA table_info(components)`, and asserts the 11 columns (`id`, `name`, `description`, `html_content`, `scss_styles`, `parameters_schema`, `width`, `height`, `thumbnail_url`, `tags`, `created_at`, `updated_at`).
-- [ ] **Step 2:** Run `npm test -- db.test` → fail.
-- [ ] **Step 3:** Implement migration `up(db)` with idempotent guard (`SELECT name FROM sqlite_master WHERE type='table' AND name='components'`) and matching `down(db)` that drops the table. Mirror the same `CREATE TABLE` statement in `SCHEMA_SQL` of `src/lib/db.ts`.
-- [ ] **Step 4:** `npm run migrate:test` → ok. Run failing test again → pass.
-- [ ] **Step 5:** `npm run migrate:test:undo` (must succeed). Re-apply with `npm run migrate:test`. Commit.
+- [x] **Step 1:** Add a Vitest case in `db.test.ts` that opens a fresh test DB, queries `PRAGMA table_info(components)`, and asserts the 11 columns (`id`, `name`, `description`, `html_content`, `scss_styles`, `parameters_schema`, `width`, `height`, `thumbnail_url`, `tags`, `created_at`, `updated_at`).
+- [x] **Step 2:** Run `npm test -- db.test` → fail.
+- [x] **Step 3:** Implement migration `up(db)` with idempotent guard (`SELECT name FROM sqlite_master WHERE type='table' AND name='components'`) and matching `down(db)` that drops the table. Mirror the same `CREATE TABLE` statement in `SCHEMA_SQL` of `src/lib/db.ts`.
+- [x] **Step 4:** `npm run migrate:test` → ok. Run failing test again → pass.
+- [x] **Step 5:** `npm run migrate:test:undo` (must succeed). Re-apply with `npm run migrate:test`. Commit.
 
 **Risk note:** Don't run on `data/sales.db` until tests pass; `migrate:test` operates on `data/test.db` only.
 
@@ -91,11 +91,11 @@ Tasks are numbered in execution order. Tasks marked **[parallel-safe]** can run 
 - Create: `src/types/component.ts`, `src/lib/component-schema.ts`
 - Test: `src/lib/__tests__/component-schema.test.ts`
 
-- [ ] **Step 1:** Write tests for: valid component round-trip, rejected invalid `type` (only `text`|`color`|`image-url`), rejected invalid key (must match `[a-zA-Z_][a-zA-Z0-9_]*`), patch schema accepts partial fields.
-- [ ] **Step 2:** `npm test -- component-schema` → fail.
-- [ ] **Step 3:** Define `Component`, `ComponentParameter`, `ParameterType` in `src/types/component.ts`. Define `componentSchema`, `componentParameterSchema`, `componentCreateSchema`, `componentPatchSchema` in `src/lib/component-schema.ts`.
-- [ ] **Step 4:** Run tests → pass.
-- [ ] **Step 5:** Commit.
+- [x] **Step 1:** Write tests for: valid component round-trip, rejected invalid `type` (only `text`|`color`|`image-url`), rejected invalid key (must match `[a-zA-Z_][a-zA-Z0-9_]*`), patch schema accepts partial fields.
+- [x] **Step 2:** `npm test -- component-schema` → fail.
+- [x] **Step 3:** Define `Component`, `ComponentParameter`, `ParameterType` in `src/types/component.ts`. Define `componentSchema`, `componentParameterSchema`, `componentCreateSchema`, `componentPatchSchema` in `src/lib/component-schema.ts`.
+- [x] **Step 4:** Run tests → pass.
+- [x] **Step 5:** Commit.
 
 ---
 
@@ -105,17 +105,17 @@ Tasks are numbered in execution order. Tasks marked **[parallel-safe]** can run 
 - Create: `src/lib/component-interpolation.ts`
 - Test: `src/lib/__tests__/component-interpolation.test.ts`
 
-- [ ] **Step 1:** Write tests:
+- [x] **Step 1:** Write tests:
   - `interpolate("Hello {{name}}!", {name:"World"})` → `"Hello World!"`
   - tolerate whitespace: `{{ name }}` matches
   - missing key stays literal: `interpolate("{{foo}}", {})` → `"{{foo}}"`
   - invalid pattern not interpolated: `{ {foo}}`, `{{ }}`, `{{1foo}}` left alone
   - works on multiline / CSS strings
   - `extractParameterKeys("a {{x}} b", ".c{color:{{y}}}")` → `["x","y"]` (deduped, order preserved)
-- [ ] **Step 2:** Tests fail.
-- [ ] **Step 3:** Implement with strict regex `/\{\{\s*([a-zA-Z_][a-zA-Z0-9_]*)\s*\}\}/g`. Two exports: `interpolate(text, params)` and `extractParameterKeys(...sources)`.
-- [ ] **Step 4:** Tests pass.
-- [ ] **Step 5:** Commit.
+- [x] **Step 2:** Tests fail.
+- [x] **Step 3:** Implement with strict regex `/\{\{\s*([a-zA-Z_][a-zA-Z0-9_]*)\s*\}\}/g`. Two exports: `interpolate(text, params)` and `extractParameterKeys(...sources)`.
+- [x] **Step 4:** Tests pass.
+- [x] **Step 5:** Commit.
 
 **This task is the heart of the feature — extra care here prevents downstream regressions.**
 
@@ -127,11 +127,11 @@ Tasks are numbered in execution order. Tasks marked **[parallel-safe]** can run 
 - Modify: `src/types/slide-model.ts`, `src/lib/slide-schema.ts`
 - Test: extend existing slide-schema tests if any; otherwise add to `component-schema.test.ts` a "container with parameters round-trips through Zod" case.
 
-- [ ] **Step 1:** Add failing test: a container with `parameters: {primary:"#ff0000"}` validates; one with `parameters: {1bad:"x"}` fails.
-- [ ] **Step 2:** Test fails (field missing).
-- [ ] **Step 3:** Add `parameters?: Record<string,string>` to `ContainerElement` interface (line 76-84). Extend `containerElementSchema` and `elementPatchSchema` with `z.record(z.string().regex(/^[a-zA-Z_][a-zA-Z0-9_]*$/), z.string()).optional()`.
-- [ ] **Step 4:** Test passes. Existing slide tests still pass.
-- [ ] **Step 5:** Commit.
+- [x] **Step 1:** Add failing test: a container with `parameters: {primary:"#ff0000"}` validates; one with `parameters: {1bad:"x"}` fails.
+- [x] **Step 2:** Test fails (field missing).
+- [x] **Step 3:** Add `parameters?: Record<string,string>` to `ContainerElement` interface (line 76-84). Extend `containerElementSchema` and `elementPatchSchema` with `z.record(z.string().regex(/^[a-zA-Z_][a-zA-Z0-9_]*$/), z.string()).optional()`.
+- [x] **Step 4:** Test passes. Existing slide tests still pass.
+- [x] **Step 5:** Commit.
 
 ---
 
@@ -141,15 +141,15 @@ Tasks are numbered in execution order. Tasks marked **[parallel-safe]** can run 
 - Modify: `src/lib/slide-serializer.ts` (line 61 area)
 - Test: add to `src/lib/__tests__/` a `slide-serializer.test.ts` (create if absent) covering interpolation in render.
 
-- [ ] **Step 1:** Write tests:
+- [x] **Step 1:** Write tests:
   - container with `htmlContent="<p>{{name}}</p>"`, `parameters={name:"X"}` → output contains `<p>X</p>` and not `{{name}}`
   - container with `scssStyles=".x{color:{{c}}}"`, `parameters={c:"red"}` → output `<style>` contains `color:red`
   - container without `parameters` → htmlContent rendered verbatim (no regression)
   - missing key → `{{missing}}` literal in output
-- [ ] **Step 2:** Tests fail.
-- [ ] **Step 3:** In `renderContainer`, before computing `scoped` and embedding `htmlContent`, run both through `interpolate(text, el.parameters ?? {})`.
-- [ ] **Step 4:** Tests pass. Run full suite — no regression in `templates.test.ts`, `content-items-sqlite.test.ts`.
-- [ ] **Step 5:** Commit.
+- [x] **Step 2:** Tests fail.
+- [x] **Step 3:** In `renderContainer`, before computing `scoped` and embedding `htmlContent`, run both through `interpolate(text, el.parameters ?? {})`.
+- [x] **Step 4:** Tests pass. Run full suite — no regression in `templates.test.ts`, `content-items-sqlite.test.ts`.
+- [x] **Step 5:** Commit.
 
 **At this point, the data model + render are complete. Acceptance criteria #3 (interpolation) and #9 (literal on missing) are exercisable end-to-end with hand-crafted JSON.**
 
@@ -161,16 +161,16 @@ Tasks are numbered in execution order. Tasks marked **[parallel-safe]** can run 
 - Create: `src/lib/components.ts`
 - Test: `src/lib/__tests__/components.test.ts`
 
-- [ ] **Step 1:** Write tests:
+- [x] **Step 1:** Write tests:
   - `createComponent` persists row; `listComponents` returns it; `getComponent(id)` round-trips
   - `inferParameters("<p>{{a}}</p>", ".x{color:{{b}}}", explicit)` → merges explicit metadata with inferred keys; explicit wins on type/label, inferred fills gaps with `type:"text"`
   - `saveFromElement(contentItemId, slideId, elementId, name)` reads container, copies `htmlContent`/`scssStyles`/`size`, infers parameters_schema, persists; returns Component
   - `updateComponent` patches; `deleteComponent` removes
   - rowToComponent / componentToRow handle JSON columns
-- [ ] **Step 2:** Tests fail.
-- [ ] **Step 3:** Implement following `src/lib/templates.ts` pattern: `TemplateRow`-like `ComponentRow`, helpers, public API. Use `generateId()` and `now()` from `./utils`. `saveFromElement` reuses `getContentItem` from `content-items.ts`.
-- [ ] **Step 4:** Tests pass.
-- [ ] **Step 5:** Commit.
+- [x] **Step 2:** Tests fail.
+- [x] **Step 3:** Implement following `src/lib/templates.ts` pattern: `TemplateRow`-like `ComponentRow`, helpers, public API. Use `generateId()` and `now()` from `./utils`. `saveFromElement` reuses `getContentItem` from `content-items.ts`.
+- [x] **Step 4:** Tests pass.
+- [x] **Step 5:** Commit.
 
 ---
 
@@ -180,11 +180,11 @@ Tasks are numbered in execution order. Tasks marked **[parallel-safe]** can run 
 - Create: `src/lib/component-thumbnail.ts`
 - Modify: `src/lib/components.ts` (call thumbnail trigger from create/update — fire-and-forget)
 
-- [ ] **Step 1:** Write a small test that calls `generateComponentThumbnail({id, htmlContent, scssStyles, parametersSchema, width, height})`, mocking Puppeteer. Assert: returns a `/uploads/component-thumbs/{id}.png` path; resolves params with `defaultValue` when present, else empty string.
-- [ ] **Step 2:** Test fails.
-- [ ] **Step 3:** Implement `generateComponentThumbnail` reusing the Puppeteer infrastructure of `src/lib/export-slides.ts`. Use `wrapSlideHtml`-style wrapping but at component dimensions. Write to `public/uploads/component-thumbs/`. Update `components.ts` to call it (no `await` — kick off and write `thumbnail_url` when done via a `PATCH`-like internal update).
-- [ ] **Step 4:** Test passes.
-- [ ] **Step 5:** Commit.
+- [x] **Step 1:** Write a small test that calls `generateComponentThumbnail({id, htmlContent, scssStyles, parametersSchema, width, height})`, mocking Puppeteer. Assert: returns a `/uploads/component-thumbs/{id}.png` path; resolves params with `defaultValue` when present, else empty string.
+- [x] **Step 2:** Test fails.
+- [x] **Step 3:** Implement `generateComponentThumbnail` reusing the Puppeteer infrastructure of `src/lib/export-slides.ts`. Use `wrapSlideHtml`-style wrapping but at component dimensions. Write to `public/uploads/component-thumbs/`. Update `components.ts` to call it (no `await` — kick off and write `thumbnail_url` when done via a `PATCH`-like internal update).
+- [x] **Step 4:** Test passes.
+- [x] **Step 5:** Commit.
 
 **Risk:** Puppeteer launch is slow. Keep generation off the request path (background promise after response).
 
@@ -196,16 +196,16 @@ Tasks are numbered in execution order. Tasks marked **[parallel-safe]** can run 
 - Create: `src/app/api/components/route.ts`, `src/app/api/components/[id]/route.ts`
 - Test: optional integration test in `src/lib/__tests__/components.test.ts` exercising via fetch is overkill — rely on lib tests + manual.
 
-- [ ] **Step 1:** No new test (lib already covered). Add a minimal route smoke if desired.
-- [ ] **Step 2:** N/A.
-- [ ] **Step 3:** Implement:
+- [x] **Step 1:** No new test (lib already covered). Add a minimal route smoke if desired.
+- [x] **Step 2:** N/A.
+- [x] **Step 3:** Implement:
   - `GET /api/components` → `listComponents()`
   - `POST /api/components` → validate body with `componentCreateSchema`, call `createComponent`
   - `GET /api/components/[id]` → 404 on null
   - `PATCH /api/components/[id]` → validate with `componentPatchSchema`, call `updateComponent`; if HTML/CSS or parameters_schema changed, trigger thumbnail regen
   - `DELETE /api/components/[id]` → 204 on success
-- [ ] **Step 4:** Manual smoke: `curl -s localhost:3000/api/components`, then `curl -X POST` with a small payload, verify in DB.
-- [ ] **Step 5:** Commit.
+- [x] **Step 4:** Manual smoke: `curl -s localhost:3000/api/components`, then `curl -X POST` with a small payload, verify in DB.
+- [x] **Step 5:** Commit.
 
 ---
 
@@ -214,11 +214,11 @@ Tasks are numbered in execution order. Tasks marked **[parallel-safe]** can run 
 **Files:**
 - Create: `src/app/api/components/from-element/route.ts`
 
-- [ ] **Step 1:** No new test (lib's `saveFromElement` already covered).
-- [ ] **Step 2:** N/A.
-- [ ] **Step 3:** `POST` body: `{contentItemId, slideId, elementId, name, description?, tags?}`. Call `saveFromElement`, return component JSON. Return 404 if element not found, 400 if element is not a container.
-- [ ] **Step 4:** Manual: `curl -X POST .../from-element` against a known container in dev DB.
-- [ ] **Step 5:** Commit.
+- [x] **Step 1:** No new test (lib's `saveFromElement` already covered).
+- [x] **Step 2:** N/A.
+- [x] **Step 3:** `POST` body: `{contentItemId, slideId, elementId, name, description?, tags?}`. Call `saveFromElement`, return component JSON. Return 404 if element not found, 400 if element is not a container.
+- [x] **Step 4:** Manual: `curl -X POST .../from-element` against a known container in dev DB.
+- [x] **Step 5:** Commit.
 
 ---
 
@@ -227,14 +227,14 @@ Tasks are numbered in execution order. Tasks marked **[parallel-safe]** can run 
 **Files:**
 - Create: `src/app/components/page.tsx`, `src/components/library/ComponentsGrid.tsx`
 
-- [ ] **Step 1:** No unit test — UI work, exercised manually.
-- [ ] **Step 2:** N/A.
-- [ ] **Step 3:**
+- [x] **Step 1:** No unit test — UI work, exercised manually.
+- [x] **Step 2:** N/A.
+- [x] **Step 3:**
   - Page is a server component that fetches `listComponents()` and passes to client grid.
   - Grid: thumbnails + name + tags. Search box (substring on name/description). Tag filter (chips). Click → opens editor (Task 11). Each card has Edit/Delete/Duplicate menu.
   - Use `cn()` from `src/lib/utils.ts`. Tailwind classes only. Keep file ≤ 300 lines (split a `ComponentCard` sub if needed).
-- [ ] **Step 4:** Manual: visit `/components`, see grid, search/filter behave.
-- [ ] **Step 5:** Commit.
+- [x] **Step 4:** Manual: visit `/components`, see grid, search/filter behave.
+- [x] **Step 5:** Commit.
 
 ---
 
@@ -243,16 +243,16 @@ Tasks are numbered in execution order. Tasks marked **[parallel-safe]** can run 
 **Files:**
 - Create: `src/components/library/ComponentEditor.tsx`, `src/components/library/ParametersMetadataEditor.tsx`
 
-- [ ] **Step 1:** N/A (UI).
-- [ ] **Step 2:** N/A.
-- [ ] **Step 3:**
+- [x] **Step 1:** N/A (UI).
+- [x] **Step 2:** N/A.
+- [x] **Step 3:**
   - `ComponentEditor` opens as modal or panel from the grid: name, description, tags, width/height, HTML editor (textarea or `<CodeEditor/>` if one exists), SCSS editor.
   - Live preview: render an in-memory container using the same iframe sandbox approach as the slide editor (use `wrapSlideHtml` + interpolation with current parameter defaults).
   - `ParametersMetadataEditor`: list of inferred keys (from `extractParameterKeys`); each row shows key, type dropdown (text/color/image-url), label input, default value input (color picker if type=color, image picker if type=image-url, plain input for text), description input.
   - Save → `PATCH /api/components/[id]` (or POST for new). On save, regen thumbnail server-side.
   - Cancel discards.
-- [ ] **Step 4:** Manual: edit an existing component, verify parameters re-inferred when HTML changes; save persists; thumbnail updates within ~5s.
-- [ ] **Step 5:** Commit.
+- [x] **Step 4:** Manual: edit an existing component, verify parameters re-inferred when HTML changes; save persists; thumbnail updates within ~5s.
+- [x] **Step 5:** Commit.
 
 ---
 
@@ -262,14 +262,14 @@ Tasks are numbered in execution order. Tasks marked **[parallel-safe]** can run 
 - Create: `src/components/library/ComponentSaveAsModal.tsx`
 - Modify: `src/components/editor/SlideOverlay.tsx` (or wherever container context menu/actions live)
 
-- [ ] **Step 1:** N/A (UI).
-- [ ] **Step 2:** N/A.
-- [ ] **Step 3:**
+- [x] **Step 1:** N/A (UI).
+- [x] **Step 2:** N/A.
+- [x] **Step 3:**
   - Add "Save as component" action in container's context menu (or as a button in `PropertiesPanel`).
   - Opens `ComponentSaveAsModal` with name/description/tags inputs, calls `POST /api/components/from-element` with current `{contentItemId, slideId, elementId}` from editor state.
   - Show success toast with link to `/components`.
-- [ ] **Step 4:** Manual: in any slide, save a container as component, confirm it shows in `/components`.
-- [ ] **Step 5:** Commit.
+- [x] **Step 4:** Manual: in any slide, save a container as component, confirm it shows in `/components`.
+- [x] **Step 5:** Commit.
 
 ---
 
@@ -279,9 +279,9 @@ Tasks are numbered in execution order. Tasks marked **[parallel-safe]** can run 
 - Create: `src/components/library/ComponentInsertModal.tsx`
 - Modify: `src/components/editor/Toolbar.tsx` (or the closest parent of slide-editor toolbar)
 
-- [ ] **Step 1:** N/A (UI).
-- [ ] **Step 2:** N/A.
-- [ ] **Step 3:**
+- [x] **Step 1:** N/A (UI).
+- [x] **Step 2:** N/A.
+- [x] **Step 3:**
   - Toolbar button "Insert component" opens modal.
   - Modal lists components with thumbnail + name (reuses `ComponentsGrid` in selection mode). Search/filter same as page.
   - Click "Insert" → fetch `GET /api/components/[id]`, then `POST /api/content/[id]/slides/[slideId]/elements` with body:
@@ -293,8 +293,8 @@ Tasks are numbered in execution order. Tasks marked **[parallel-safe]** can run 
       parameters: defaultsFromSchema }
     ```
   - Editor refreshes slide and selects the new element.
-- [ ] **Step 4:** Manual: insert a component into a slide, verify preview interpolates and the element responds to manual edits.
-- [ ] **Step 5:** Commit.
+- [x] **Step 4:** Manual: insert a component into a slide, verify preview interpolates and the element responds to manual edits.
+- [x] **Step 5:** Commit.
 
 ---
 
@@ -304,15 +304,15 @@ Tasks are numbered in execution order. Tasks marked **[parallel-safe]** can run 
 - Create: `src/components/editor/ContainerParametersPanel.tsx`
 - Modify: `src/components/editor/PropertiesPanel.tsx` (only add a render of the sub-panel — no inline logic; PropertiesPanel is already 576 lines)
 
-- [ ] **Step 1:** N/A (UI).
-- [ ] **Step 2:** N/A.
-- [ ] **Step 3:**
+- [x] **Step 1:** N/A (UI).
+- [x] **Step 2:** N/A.
+- [x] **Step 3:**
   - `ContainerParametersPanel` renders only when `element.parameters` is defined.
   - For each key in `parameters`, render input based on the source component's `parameters_schema` (fetched via `/api/components/[id]` if the container has a hidden `componentId` — **OR** simpler: store a minimal type hint on the container itself when inserting; revisit if needed). For MVP: best-effort — if no type info, default to text input. Keep this simple; don't over-couple to component master.
   - Onchange → `PATCH .../elements/[elementId]` with new `parameters` map.
   - Decision: do **not** persist `componentId` on the container (snapshot model). Type info stays per-element. If we want richer inputs later, store `parameterTypes` (Record<string, ParameterType>) alongside `parameters` on the container.
-- [ ] **Step 4:** Manual: change a parameter, see preview update via existing slide save+re-render flow.
-- [ ] **Step 5:** Commit.
+- [x] **Step 4:** Manual: change a parameter, see preview update via existing slide save+re-render flow.
+- [x] **Step 5:** Commit.
 
 > **Decision point during implementation:** if richer inputs (color picker, image picker) are required at MVP, add a sibling `parameterTypes?: Record<string, ParameterType>` field on `ContainerElement` (mirror Task 4) and copy it from the source schema at insert time. Otherwise default to text inputs and revisit. Acceptance criterion #7 requires the richer inputs — so include the field.
 
@@ -325,16 +325,16 @@ Tasks are numbered in execution order. Tasks marked **[parallel-safe]** can run 
 **Files:**
 - Modify: `src/lib/chat-system-prompt.ts` (around lines 60-79, after assets section)
 
-- [ ] **Step 1:** N/A (prompt change). Optional: add a unit test asserting the section is present when components exist.
-- [ ] **Step 2:** N/A.
-- [ ] **Step 3:**
+- [x] **Step 1:** N/A (prompt change). Optional: add a unit test asserting the section is present when components exist.
+- [x] **Step 2:** N/A.
+- [x] **Step 3:**
   - Inject a `Components library` block listing each component as `- "{name}" (id: {id}) → {description}; parameters: [{key}:{type}, ...]`.
   - Add curl rules:
     - "To save the current container as a component: `curl -X POST http://localhost:3000/api/components/from-element -H 'Content-Type: application/json' -d '{...}'`"
     - "To insert a component: first `curl -s http://localhost:3000/api/components/{id}` to read it, then POST to `.../elements` with `kind: container`, copying `htmlContent`, `scssStyles`, `size: {width, height}`, and `parameters` resolved from `parameters_schema[].defaultValue`."
   - Mention: "Parameters not resolved appear literally as `{{key}}` in the preview — fill them all to avoid that."
-- [ ] **Step 4:** Manual: ask the chat in dev to "save this container as a component called X" and verify it executes the curl correctly.
-- [ ] **Step 5:** Commit.
+- [x] **Step 4:** Manual: ask the chat in dev to "save this container as a component called X" and verify it executes the curl correctly.
+- [x] **Step 5:** Commit.
 
 ---
 
@@ -342,7 +342,7 @@ Tasks are numbered in execution order. Tasks marked **[parallel-safe]** can run 
 
 **Files:** none
 
-- [ ] Run all 10 acceptance criteria manually:
+- [x] Run all 10 acceptance criteria manually:
   1. Create from UI → appears in `/components`
   2. "Save as component" from slide → appears in `/components` with HTML/CSS copied + inferred params
   3. Insert from modal → preview interpolates HTML and CSS correctly
@@ -353,8 +353,8 @@ Tasks are numbered in execution order. Tasks marked **[parallel-safe]** can run 
   8. Chat exercises both save and insert flows
   9. Param missing → `{{key}}` literal in preview
   10. `npm run migrate` (dev DB) and `npm run migrate:test` (test DB) both clean
-- [ ] Run full suite: `npm test`. All green.
-- [ ] Run `npm run lint`. Clean.
+- [x] Run full suite: `npm test`. All green.
+- [x] Run `npm run lint`. Clean.
 
 ---
 

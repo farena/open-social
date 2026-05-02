@@ -19,6 +19,7 @@ import type {
   SlideElement,
   SlideSnapshot,
 } from "@/types/slide-model";
+import type { ParameterType } from "@/types/component";
 import {
   newContentItemInputSchema,
   contentItemPatchSchema,
@@ -489,6 +490,8 @@ export type SlideElementPatch = Partial<{
   scssStyles: string;
   htmlContent: string;
   src: string;
+  parameters: Record<string, string>;
+  parameterTypes: Record<string, ParameterType>;
 }>;
 
 export async function addSlideElement(
@@ -543,6 +546,12 @@ export async function updateSlideElement(
 
   if (element.kind === "container" && patch.htmlContent !== undefined) {
     element.htmlContent = patch.htmlContent;
+  }
+  if (element.kind === "container" && patch.parameters !== undefined) {
+    element.parameters = patch.parameters;
+  }
+  if (element.kind === "container" && patch.parameterTypes !== undefined) {
+    element.parameterTypes = patch.parameterTypes;
   }
   if (element.kind === "image" && patch.src !== undefined) {
     element.src = patch.src;

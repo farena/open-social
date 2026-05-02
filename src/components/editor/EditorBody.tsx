@@ -162,6 +162,7 @@ export function EditorBody({
         slide={slide}
         selection={selection}
         dispatch={dispatch}
+        contentItemId={contentItemId}
       />
     </>
   );

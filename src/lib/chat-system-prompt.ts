@@ -3,6 +3,7 @@ import type { BrandConfig } from "@/types/brand";
 import type { BusinessContext } from "@/types/business-context";
 import type { ContentItem } from "@/types/content-item";
 import type { StylePreset } from "@/types/style-preset";
+import type { Component } from "@/types/component";
 import { DIMENSIONS, MAX_SLIDES } from "@/types/carousel";
 
 export function buildSystemPrompt(
@@ -10,7 +11,8 @@ export function buildSystemPrompt(
   carousel?: ContentItem | null,
   stylePreset?: StylePreset | null,
   businessContext?: BusinessContext | null,
-  assets?: Asset[] | null
+  assets?: Asset[] | null,
+  components?: Component[] | null
 ): string {
   const businessSection = businessContext && (
     businessContext.summary ||
@@ -78,6 +80,56 @@ ${carouselAssetsSection}
 ${librarySection}`
     : "";
 
+  const formatComponentLine = (c: Component): string => {
+    const paramsSummary = c.parametersSchema.length > 0
+      ? `; parameters: ${c.parametersSchema.map((p) => `${p.key}(${p.type})`).join(", ")}`
+      : "";
+    const desc = c.description ? ` — ${c.description}` : "";
+    return `- "${c.name}" (id: ${c.id})${desc}${paramsSummary}`;
+  };
+
+  const componentsSection = components && components.length > 0
+    ? `## Componentes disponibles (biblioteca)
+
+${components.map(formatComponentLine).join("\n")}
+
+### Saving a container as a component
+
+\`\`\`bash
+curl -X POST http://localhost:3000/api/components/from-element \\
+  -H 'Content-Type: application/json' \\
+  -d '{"contentItemId":"<id>","slideId":"<id>","elementId":"<id>","name":"<name>","description":"<optional>","tags":["optional"]}'
+\`\`\`
+
+### Inserting a component into a slide
+
+1. Fetch the component:
+   \`\`\`bash
+   curl -s http://localhost:3000/api/components/<COMPONENT_ID>
+   \`\`\`
+
+2. Build a container element from it. From the component JSON, copy:
+   - \`htmlContent\`
+   - \`scssStyles\`
+   - \`size\`: { width, height }
+   - \`parameters\`: object with one key per parametersSchema entry, value = entry.defaultValue (or "" if absent or empty string is desired)
+   - \`parameterTypes\`: object with one key per parametersSchema entry, value = entry.type
+
+   Then POST to:
+   \`http://localhost:3000/api/content/<CONTENT_ITEM_ID>/slides/<SLIDE_ID>/elements\`
+
+   with body:
+   \`\`\`json
+   {"kind":"container","position":{"x":0,"y":0},"size":{...},"htmlContent":"...","scssStyles":"...","parameters":{...},"parameterTypes":{...}}
+   \`\`\`
+
+### Important notes about components
+
+- Parameter values are interpolated as \`{{key}}\` in \`htmlContent\` and \`scssStyles\` at render time.
+- If a \`{{key}}\` has no value in \`parameters\`, it appears literally in the preview (\`{{key}}\`). Resolve all keys to non-empty values before inserting unless that's intentional.
+- The container is a snapshot — editing the master component does NOT update inserted copies.`
+    : "";
+
   const presetSection = stylePreset
     ? `## Active style preset: "${stylePreset.name}"
 Follow these design rules for ALL slides:
@@ -99,6 +151,8 @@ ${brandSection}
 ${carouselSection}
 
 ${assetsSection}
+
+${componentsSection}
 
 ${presetSection}
 

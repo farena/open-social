@@ -610,6 +610,87 @@ describe("updateSlideElement", () => {
     // At least 2 snapshots: one from addSlideElement, one from updateSlideElement
     expect(result!.item.slides[0].previousVersions.length).toBeGreaterThanOrEqual(2);
   });
+
+  it("persists parameters on a container element", async () => {
+    const { createContentItem, appendSlide, addSlideElement, updateSlideElement, getContentItem } =
+      await import("@/lib/content-items");
+    const item = await createContentItem(makeInput());
+    const withSlide = await appendSlide(item.id, makeSlideInput());
+    const slideId = withSlide!.slides[0].id;
+
+    const element = {
+      id: "el-params",
+      kind: "container" as const,
+      htmlContent: "<p>{{foo}}</p>",
+      position: { x: 0, y: 0 },
+      size: { w: 100, h: 50 },
+    };
+    await addSlideElement(item.id, slideId, element);
+
+    const result = await updateSlideElement(item.id, slideId, "el-params", {
+      parameters: { foo: "bar" },
+    });
+    expect(result).not.toBeNull();
+
+    const fetched = await getContentItem(item.id);
+    const el = fetched!.slides[0].elements.find((e) => e.id === "el-params");
+    expect(el).toBeDefined();
+    expect((el as { parameters?: Record<string, string> }).parameters).toEqual({ foo: "bar" });
+  });
+
+  it("persists parameterTypes on a container element", async () => {
+    const { createContentItem, appendSlide, addSlideElement, updateSlideElement, getContentItem } =
+      await import("@/lib/content-items");
+    const item = await createContentItem(makeInput());
+    const withSlide = await appendSlide(item.id, makeSlideInput());
+    const slideId = withSlide!.slides[0].id;
+
+    const element = {
+      id: "el-ptypes",
+      kind: "container" as const,
+      htmlContent: "<p>{{color}}</p>",
+      position: { x: 0, y: 0 },
+      size: { w: 100, h: 50 },
+    };
+    await addSlideElement(item.id, slideId, element);
+
+    const result = await updateSlideElement(item.id, slideId, "el-ptypes", {
+      parameterTypes: { color: "color" },
+    });
+    expect(result).not.toBeNull();
+
+    const fetched = await getContentItem(item.id);
+    const el = fetched!.slides[0].elements.find((e) => e.id === "el-ptypes");
+    expect(el).toBeDefined();
+    expect((el as { parameterTypes?: Record<string, string> }).parameterTypes).toEqual({ color: "color" });
+  });
+
+  it("does NOT add parameters field when patching an image element", async () => {
+    const { createContentItem, appendSlide, addSlideElement, updateSlideElement, getContentItem } =
+      await import("@/lib/content-items");
+    const item = await createContentItem(makeInput());
+    const withSlide = await appendSlide(item.id, makeSlideInput());
+    const slideId = withSlide!.slides[0].id;
+
+    const imageElement = {
+      id: "el-image-params",
+      kind: "image" as const,
+      src: "/uploads/test.png",
+      position: { x: 0, y: 0 },
+      size: { w: 200, h: 200 },
+    };
+    await addSlideElement(item.id, slideId, imageElement);
+
+    await updateSlideElement(item.id, slideId, "el-image-params", {
+      parameters: { foo: "bar" },
+    } as Parameters<typeof updateSlideElement>[3]);
+
+    const fetched = await getContentItem(item.id);
+    const el = fetched!.slides[0].elements.find((e) => e.id === "el-image-params");
+    expect(el).toBeDefined();
+    expect(el!.kind).toBe("image");
+    expect((el as Record<string, unknown>).parameters).toBeUndefined();
+  });
 });
 
 // ---------------------------------------------------------------------------

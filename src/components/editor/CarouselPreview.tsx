@@ -57,7 +57,14 @@ export function CarouselPreview({
 
   return (
     <div className="flex-1 flex min-h-0 min-w-0" id="carousel-preview">
-      <div className="relative flex-1 flex flex-col min-h-0 min-w-0 bg-[#f0f0f0]">
+      <div
+        className="relative flex-1 flex flex-col min-h-0 min-w-0 bg-[#f0f0f0]"
+        onMouseDown={(e) => {
+          if (e.target === e.currentTarget) {
+            dispatch({ type: "SELECT", elementId: null });
+          }
+        }}
+      >
         <div
           className={`pointer-events-none absolute top-3 right-3 z-20 flex items-center gap-1.5 rounded-full bg-emerald-500 text-white text-xs font-medium px-2.5 py-1 shadow-sm transition-all duration-200 ${
             showSaved
@@ -69,7 +76,14 @@ export function CarouselPreview({
           <Check className="h-3.5 w-3.5" />
           <span>Guardado</span>
         </div>
-        <div className="flex-1 relative min-h-0 p-8 px-14">
+        <div
+          className="flex-1 relative min-h-0 p-8 px-14"
+          onMouseDown={(e) => {
+            if (e.target === e.currentTarget) {
+              dispatch({ type: "SELECT", elementId: null });
+            }
+          }}
+        >
           <Button
             variant="ghost"
             size="icon"

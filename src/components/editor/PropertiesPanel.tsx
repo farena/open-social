@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { X } from "lucide-react";
 import {
   createContainerElement,
@@ -14,12 +15,15 @@ import type {
 import { CodeEditor } from "./CodeEditor";
 import { LayersPanel } from "./LayersPanel";
 import type { SlideEditorAction } from "./useSlideEditor";
+import { ComponentSaveAsModal } from "@/components/library/ComponentSaveAsModal";
+import { ContainerParametersPanel } from "./ContainerParametersPanel";
 
 interface PropertiesPanelProps {
   slide: Slide;
   selection: string | null;
   dispatch: (action: SlideEditorAction) => void;
   onClose?: () => void;
+  contentItemId?: string;
 }
 
 /**
@@ -33,7 +37,9 @@ export function PropertiesPanel({
   selection,
   dispatch,
   onClose,
+  contentItemId,
 }: PropertiesPanelProps) {
+  const [saveAsOpen, setSaveAsOpen] = useState(false);
   const selected = selection
     ? slide.elements.find((el) => el.id === selection) ?? null
     : null;
@@ -57,15 +63,23 @@ export function PropertiesPanel({
         )}
       </div>
 
-      <div className="flex-1 px-5 pb-6 space-y-6">
-        <LayersPanel
-          elements={slide.elements}
-          selection={selection}
-          dispatch={dispatch}
+      {contentItemId && selected?.kind === "container" && (
+        <ComponentSaveAsModal
+          contentItemId={contentItemId}
+          slideId={slide.id}
+          elementId={selected.id}
+          open={saveAsOpen}
+          onClose={() => setSaveAsOpen(false)}
         />
-
+      )}
+      <div className="flex-1 px-5 pb-6 space-y-6">
         {!selected && (
           <>
+            <LayersPanel
+              elements={slide.elements}
+              selection={selection}
+              dispatch={dispatch}
+            />
             <BackgroundControls
               background={slide.background}
               onChange={(bg) =>
@@ -79,6 +93,9 @@ export function PropertiesPanel({
         {selected?.kind === "container" && (
           <ContainerControls element={selected} dispatch={dispatch} />
         )}
+        {selected?.kind === "container" && selected.parameters && Object.keys(selected.parameters).length > 0 && contentItemId && (
+          <ContainerParametersPanel contentItemId={contentItemId} slideId={slide.id} elementId={selected.id} parameters={selected.parameters} parameterTypes={selected.parameterTypes} />
+        )}
         {selected?.kind === "image" && (
           <ImageControls element={selected} dispatch={dispatch} />
         )}
@@ -88,6 +105,17 @@ export function PropertiesPanel({
             <ScssStylesControls element={selected} dispatch={dispatch} />
             <CommonElementControls element={selected} dispatch={dispatch} />
           </>
+        )}
+
+        {selected?.kind === "container" && contentItemId && (
+          <Section title="Components">
+            <button
+              onClick={() => setSaveAsOpen(true)}
+              className="w-full text-xs py-1.5 rounded border border-border hover:bg-muted transition-colors"
+            >
+              Save as component
+            </button>
+          </Section>
         )}
       </div>
     </aside>

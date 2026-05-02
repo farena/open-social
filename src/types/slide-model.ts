@@ -81,6 +81,19 @@ export interface ContainerElement extends ElementBase {
    * data attributes that `scssStyles` targets via nested rules.
    */
   htmlContent: string;
+  /**
+   * Resolved parameter values for `{{key}}` interpolation. Keys must match
+   * `[a-zA-Z_][a-zA-Z0-9_]*`. Values are strings (colors, URLs, text, etc.).
+   * Populated when a container is inserted from the components library.
+   */
+  parameters?: Record<string, string>;
+  /**
+   * Per-key type hint used by the editor to render the correct input widget
+   * (color picker, image picker, or plain text). Populated at insert time from
+   * the source component's `parametersSchema`. Stored as a snapshot alongside
+   * `parameters` so the editor does not need to re-fetch the master component.
+   */
+  parameterTypes?: Record<string, import("./component").ParameterType>;
 }
 
 export interface ImageElement extends ElementBase {
