@@ -11,6 +11,7 @@ import type {
   ContainerElement,
   ImageElement,
 } from "@/types/slide-model";
+import { CodeEditor } from "./CodeEditor";
 import { LayersPanel } from "./LayersPanel";
 import type { SlideEditorAction } from "./useSlideEditor";
 
@@ -256,19 +257,17 @@ function ContainerControls({
 }) {
   return (
     <Section title="HTML content">
-      <textarea
+      <CodeEditor
         value={element.htmlContent}
-        onChange={(e) =>
+        language="html"
+        height={200}
+        onChange={(htmlContent) =>
           dispatch({
             type: "PATCH_ELEMENT",
             elementId: element.id,
-            patch: { htmlContent: e.target.value } as Partial<ContainerElement>,
+            patch: { htmlContent } as Partial<ContainerElement>,
           })
         }
-        rows={8}
-        spellCheck={false}
-        placeholder='<h1 class="title">Hola mundo</h1>'
-        className="w-full text-xs font-mono border border-border rounded px-2 py-1.5 resize-y leading-snug"
       />
     </Section>
   );
@@ -313,21 +312,17 @@ function ScssStylesControls({
 }) {
   return (
     <Section title="SCSS styles">
-      <textarea
+      <CodeEditor
         value={element.scssStyles ?? ""}
-        onChange={(e) =>
+        language="scss"
+        height={200}
+        onChange={(scssStyles) =>
           dispatch({
             type: "PATCH_ELEMENT",
             elementId: element.id,
-            patch: { scssStyles: e.target.value },
+            patch: { scssStyles },
           })
         }
-        rows={8}
-        spellCheck={false}
-        placeholder={
-          "color: white; background: navy;\n& h1 { font-size: 96px; font-weight: 900; }\n& .pill { padding: 6px 16px; border-radius: 999px; }"
-        }
-        className="w-full text-xs font-mono border border-border rounded px-2 py-1.5 resize-y leading-snug"
       />
       <p className="text-[10px] text-muted-foreground mt-1 leading-tight">
         Native CSS with nesting (<code>&amp;</code> selectors). Scoped to this
