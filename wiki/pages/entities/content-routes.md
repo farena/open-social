@@ -2,10 +2,10 @@
 title: Content API routes
 type: entity
 code_refs: [src/app/api/content/route.ts, "src/app/api/content/[id]/route.ts", "src/app/api/content/[id]/slides/route.ts", "src/app/api/content/[id]/slides/[slideId]/route.ts", "src/app/api/content/[id]/slides/[slideId]/undo/route.ts", "src/app/api/content/[id]/slides/[slideId]/redo/route.ts", "src/app/api/content/[id]/slides/[slideId]/background/route.ts", "src/app/api/content/[id]/slides/[slideId]/elements/route.ts", "src/app/api/content/[id]/slides/[slideId]/elements/[elementId]/route.ts", "src/app/api/content/[id]/assets/route.ts", "src/app/api/content/[id]/assets/[assetId]/route.ts", "src/app/api/content/[id]/references/route.ts", "src/app/api/content/[id]/export/route.ts", src/lib/content-items.ts]
-sources: [raw/decisions/carousel-to-content-item-pivot-2026-04-26.md, raw/decisions/append-only-agent-contract-2026-04-26.md]
-related: [pages/entities/content-item-model.md, pages/entities/generate-route.md, pages/entities/structured-slide-pipeline.md, pages/concepts/append-only-agent-contract.md, pages/concepts/version-history.md]
+sources: [raw/decisions/carousel-to-content-item-pivot-2026-04-26.md, raw/decisions/append-only-agent-contract-2026-04-26.md, raw/incidents/slide-edit-lost-on-slide-switch-2026-05-27.md]
+related: [pages/entities/content-item-model.md, pages/entities/generate-route.md, pages/entities/structured-slide-pipeline.md, pages/entities/slide-editor.md, pages/concepts/append-only-agent-contract.md, pages/concepts/version-history.md]
 created: 2026-04-29
-updated: 2026-05-01
+updated: 2026-05-27
 confidence: high
 ---
 
@@ -36,6 +36,8 @@ REST surface for [[entities/content-item-model]]. Replaces the legacy `/api/caro
 ## Granular vs whole-slide edits
 
 `PUT /slides/[slideId]` replaces the entire slide payload — partial fields overwrite to undefined. The granular endpoints (`/background`, `/elements`, `/elements/[elementId]`) exist so the agent can mutate one piece without rebuilding the whole slide; this matters because the chat agent has a $1 token budget per turn (see [[entities/chat-route]]). Every granular call still calls `pushSnapshot(slide)` in `src/lib/content-items.ts`, so `/undo` continues to work.
+
+**Response shape (gotcha).** The slide-mutation routes return the **full updated `ContentItem`**, not the mutated slide — `updateSlide`/`updateSlideElement`/`updateSlideBackground` in `src/lib/content-items.ts` all return the item (`Promise<ContentItem | null>` and friends). Clients must merge the response at the *item* level. Treating it as a slide (matching `response.id` against `slides`) silently no-ops because `response.id` is the item id — this caused the 2026-05-27 "edits revert on slide switch" bug. See [[sources/slide-edit-lost-on-slide-switch-2026-05-27]] and [[entities/slide-editor]].
 
 ## Append-only enforcement
 

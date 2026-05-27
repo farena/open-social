@@ -34,6 +34,7 @@ Karpathy-style LLM wiki. Pages are compiled at ingest time from decisions, incid
 - [wiki-query-frontmatter-preprocessor-2026-05-01](pages/sources/wiki-query-frontmatter-preprocessor-2026-05-01.md)
 - [keepalive-put-vs-sendbeacon-2026-05-01](raw/decisions/keepalive-put-vs-sendbeacon-2026-05-01.md)
 - [migration-runner-2026-05-02](raw/decisions/migration-runner-2026-05-02.md)
+- [slide-edit-lost-on-slide-switch-2026-05-27](pages/sources/slide-edit-lost-on-slide-switch-2026-05-27.md) — edits reverted on slide switch: slide PUT returns the full ContentItem and the client merged it as a slide
 
 ## Comparisons
 

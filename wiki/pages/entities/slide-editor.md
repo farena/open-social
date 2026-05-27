@@ -2,10 +2,10 @@
 title: Slide editor (canvas + overlay)
 type: entity
 code_refs: [src/components/editor/SlideCanvas.tsx, src/components/editor/SlideOverlay.tsx, src/components/editor/PropertiesPanel.tsx, src/components/editor/LayersPanel.tsx, src/components/editor/Toolbar.tsx, src/components/editor/useSlideEditor.ts, src/components/editor/useEditorShortcuts.ts, src/components/editor/EditorBody.tsx, src/components/editor/CarouselPreview.tsx, src/components/editor/SlideRenderer.tsx, src/components/editor/SlideFilmstrip.tsx]
-sources: [raw/decisions/structured-slide-model-2026-04-25.md, raw/decisions/keepalive-put-vs-sendbeacon-2026-05-01.md]
-related: [pages/entities/structured-slide-pipeline.md, pages/concepts/structured-slide-model.md, pages/concepts/version-history.md]
+sources: [raw/decisions/structured-slide-model-2026-04-25.md, raw/decisions/keepalive-put-vs-sendbeacon-2026-05-01.md, raw/incidents/slide-edit-lost-on-slide-switch-2026-05-27.md]
+related: [pages/entities/structured-slide-pipeline.md, pages/entities/content-routes.md, pages/concepts/structured-slide-model.md, pages/concepts/version-history.md]
 created: 2026-04-29
-updated: 2026-05-01
+updated: 2026-05-27
 confidence: high
 ---
 
@@ -44,6 +44,10 @@ The editor's in-flight `slide` (live reducer state, ahead of the persisted row) 
 
 `useSlideEditor` debounces persistence (see [[concepts/version-history]] for the current window). On `beforeunload`, `EditorBody` does a final `fetch(..., { method: "PUT", keepalive: true })` against the slide route — `sendBeacon` was tried first but always issues `POST` and silently 405s against the PUT-only handler. The flush also short-circuits when `lastSentContentRef` matches the current signature, so a debounce that fired immediately before unload doesn't double-send. See [[raw/decisions/keepalive-put-vs-sendbeacon-2026-05-01]].
 
+**Persist response contract.** The slide PUT returns the **full updated `ContentItem`** (not the slide — `updateSlide` in `src/lib/content-items.ts` returns `Promise<ContentItem | null>`). `EditorBody` surfaces it through `onItemPersisted: (item: ContentItem) => void`; the page does `setItem(updatedItem)` so `item.slides` reflects what was persisted. Merging at the *item* level is mandatory: an earlier `onSlidePersisted` matched `s.id === updated.id` against `prev.slides`, but `updated.id` is the item id, so no slide ever matched and `item.slides` went stale — on slide switch the editor re-seeded from the stale array and reverted the edit (DB was always correct). See [[sources/slide-edit-lost-on-slide-switch-2026-05-27]].
+
+**Slide-switch flush.** When navigating to a different slide, `useSlideEditor`'s reset effect flushes the *outgoing* slide's pending debounced persist before the persist effect's cleanup `clearTimeout`s it — otherwise a switch within the debounce window drops the un-persisted edit. The reset effect is keyed on `state.slide.id` (not `state.slide`) so it does not run per-edit; the outgoing slide and persist fn are read from refs to stay current.
+
 ## Recent changes
 
 - 2026-04-26 (`b34fc19`) — Operates on `ContentItem` instead of `Carousel`.
@@ -52,3 +56,4 @@ The editor's in-flight `slide` (live reducer state, ahead of the persisted row) 
 - 2026-05-01 (`707c67e`) — Tab-close flush switched from `sendBeacon` to `fetch` with `keepalive: true` because the slide endpoint is PUT-only; gated on `lastSentContentRef` to suppress duplicate sends.
 - 2026-05-01 (`4c5459f`) — `EditorBody` exposes `onLiveSlideChange`; the page splices the live slide into `item.slides` so `FullscreenPreview` and `SlideFilmstrip` show unsaved edits before the debounce fires.
 - 2026-05-01 (`5df9355`) — Persist debounce lowered from 10 s to 5 s; `CarouselPreview` shows a transient "Saved" badge in the top-right whenever a PUT succeeds (`savedAt` prop bubbled from `EditorBody`).
+- 2026-05-27 (uncommitted) — Fixed edits reverting on slide switch: `onSlidePersisted` → `onItemPersisted: (item: ContentItem) => void`, page does `setItem(updatedItem)` (the slide PUT returns the whole item). `useSlideEditor` flushes the outgoing slide's pending persist on slide switch. See [[sources/slide-edit-lost-on-slide-switch-2026-05-27]].
