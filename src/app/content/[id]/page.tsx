@@ -483,17 +483,11 @@ export default function ContentItemPage({ params }: PageProps) {
             showSafeZones={showSafeZones}
             onUndoSlide={handleUndoSlide}
             onRedoSlide={handleRedoSlide}
-            onSlidePersisted={(updated) => {
-              setItem((prev) =>
-                prev
-                  ? {
-                      ...prev,
-                      slides: prev.slides.map((s) =>
-                        s.id === updated.id ? updated : s
-                      ),
-                    }
-                  : prev
-              );
+            onItemPersisted={(updatedItem) => {
+              // The slide PUT returns the full updated ContentItem. Replace the
+              // item so `slides` reflects what was persisted; otherwise the
+              // editor reverts to the stale slide content on slide switch.
+              setItem(updatedItem);
             }}
             onLiveSlideChange={setLiveSlide}
             toolbar={toolbar}

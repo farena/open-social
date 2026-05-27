@@ -48,6 +48,21 @@ class DebounceTracker {
       this.lastSentContent = currentContent;
     }
   }
+
+  /**
+   * Navigate to a different slide (mirrors the id-change branch in
+   * useSlideEditor). The pending timer for the OUTGOING slide must be flushed
+   * before it is cleared, otherwise its un-persisted edits are lost.
+   */
+  switchSlide(outgoingContent: string): void {
+    if (this.timer === null) return;
+    clearTimeout(this.timer);
+    this.timer = null;
+    if (this.lastSentContent !== outgoingContent) {
+      this.lastSentContent = outgoingContent;
+      this.onPersist(outgoingContent);
+    }
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -104,6 +119,30 @@ describe("useSlideEditor debounce contract (10 s window)", () => {
 
     // The timer was cleared; advancing past the original window fires nothing more
     vi.advanceTimersByTime(5_001);
+    expect(onPersist).toHaveBeenCalledOnce();
+  });
+
+  it("flushes a pending edit when navigating to another slide mid-debounce", () => {
+    tracker.edit("slideA-v2");
+    vi.advanceTimersByTime(2_000); // still well within the 10 s window
+
+    // User clicks a different slide before the debounce fires.
+    tracker.switchSlide("slideA-v2");
+    expect(onPersist).toHaveBeenCalledOnce();
+    expect(onPersist).toHaveBeenCalledWith("slideA-v2");
+
+    // The flushed timer must not double-send after the original window.
+    vi.advanceTimersByTime(10_000);
+    expect(onPersist).toHaveBeenCalledOnce();
+  });
+
+  it("does not re-send on slide switch when the edit was already persisted", () => {
+    tracker.edit("slideA-v2");
+    vi.advanceTimersByTime(10_000); // debounce fires, content persisted
+    expect(onPersist).toHaveBeenCalledOnce();
+
+    // Switching now (no pending timer, content already sent) is a no-op.
+    tracker.switchSlide("slideA-v2");
     expect(onPersist).toHaveBeenCalledOnce();
   });
 });

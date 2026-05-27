@@ -195,6 +195,18 @@ export function useSlideEditor(
   const lastSentContentRef = useRef<string | null>(null);
   const persistTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // Always-current mirrors of state.slide and onPersist, so effects keyed on
+  // narrow deps (e.g. state.slide.id) can still read the latest value without
+  // re-registering on every edit. Synced in an effect that runs before the
+  // reset/flush effect below (effects fire in declaration order), so the flush
+  // reads the outgoing slide and the latest persist fn.
+  const currentSlideRef = useRef<Slide>(state.slide);
+  const onPersistRef = useRef(onPersist);
+  useEffect(() => {
+    currentSlideRef.current = state.slide;
+    onPersistRef.current = onPersist;
+  });
+
   const slideContentSignature = (s: Slide): string =>
     JSON.stringify({
       background: s.background,
@@ -210,6 +222,20 @@ export function useSlideEditor(
     if (externalSlide === lastPersistedRef.current) return;
 
     if (externalSlide.id !== state.slide.id) {
+      // Switching to a different slide. Flush any pending debounced persist for
+      // the OUTGOING slide first — otherwise the persist effect's cleanup will
+      // clearTimeout() the pending timer when state.slide changes, silently
+      // dropping un-persisted edits made within the debounce window.
+      if (persistTimerRef.current !== null) {
+        const outgoing = currentSlideRef.current;
+        const outgoingSig = slideContentSignature(outgoing);
+        clearTimeout(persistTimerRef.current);
+        persistTimerRef.current = null;
+        if (lastSentContentRef.current !== outgoingSig) {
+          lastSentContentRef.current = outgoingSig;
+          void onPersistRef.current(outgoing);
+        }
+      }
       dispatch({ type: "SET_SLIDE", slide: externalSlide });
       lastPersistedRef.current = externalSlide;
       return;
@@ -226,6 +252,13 @@ export function useSlideEditor(
     // Foreign change (e.g. chat IA rewrote the slide) — last-write-wins.
     dispatch({ type: "SET_SLIDE", slide: externalSlide });
     lastPersistedRef.current = externalSlide;
+    // Keyed on state.slide.id (not state.slide) so this effect only runs on a
+    // real slide switch or upstream change — NOT on every local edit. Running
+    // it per-edit reintroduces a clobber: in the window after a persist, where
+    // lastPersistedRef points at the local snapshot but externalSlide is still
+    // the pre-save prop, an edit would hit the "foreign change" branch and
+    // SET_SLIDE back to stale upstream content. The outgoing slide and persist
+    // fn are read from refs above to stay current despite the narrow deps.
   }, [externalSlide, state.slide.id]);
 
   // Debounced persist whenever the editable parts of the slide change.
@@ -252,11 +285,8 @@ export function useSlideEditor(
 
   // Flush pending persist on unmount so in-flight edits are not lost when the
   // user navigates away or collapses the panel before the debounce window ends.
-  // We use a ref for state.slide so the cleanup closure always sees the latest
-  // slide without re-registering the effect on every render.
-  const currentSlideRef = useRef<Slide>(state.slide);
-  currentSlideRef.current = state.slide;
-
+  // currentSlideRef / onPersistRef (declared above) keep the cleanup closure
+  // pointed at the latest slide and persist fn without re-registering.
   useEffect(() => {
     return () => {
       if (persistTimerRef.current === null) return; // no pending timer
@@ -266,9 +296,8 @@ export function useSlideEditor(
       clearTimeout(persistTimerRef.current);
       persistTimerRef.current = null;
       // Kick off the persist without awaiting — unmount cannot be async.
-      void onPersist(current);
+      void onPersistRef.current(current);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Stable dispatch wrapper for callers that use it in deps arrays.

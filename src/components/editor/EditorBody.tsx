@@ -6,6 +6,7 @@ import { PropertiesPanel } from "./PropertiesPanel";
 import { useSlideEditor } from "./useSlideEditor";
 import { useEditorShortcuts } from "./useEditorShortcuts";
 import type { Slide, AspectRatio } from "@/types/carousel";
+import type { ContentItem } from "@/types/content-item";
 
 interface EditorBodyProps {
   contentItemId: string;
@@ -14,7 +15,10 @@ interface EditorBodyProps {
   activeIndex: number;
   onActiveChange: (index: number) => void;
   showSafeZones?: boolean;
-  onSlidePersisted?: (slide: Slide) => void;
+  /** Fires after a successful slide PUT. The slide route returns the FULL
+   * updated ContentItem (not the slide), so the parent should replace its item
+   * with this value to keep `slides` in sync with what was persisted. */
+  onItemPersisted?: (item: ContentItem) => void;
   /** Fires whenever the in-editor live slide changes, so the page can mirror
    * unsaved edits into FullscreenPreview / SlideFilmstrip before the debounced
    * persist runs. */
@@ -43,7 +47,7 @@ export function EditorBody({
   activeIndex,
   onActiveChange,
   showSafeZones = false,
-  onSlidePersisted,
+  onItemPersisted,
   onLiveSlideChange,
   onUndoSlide,
   onRedoSlide,
@@ -71,13 +75,13 @@ export function EditorBody({
       );
       if (res.ok) {
         setSavedAt(Date.now());
-        if (onSlidePersisted) {
-          const updated = await res.json();
-          onSlidePersisted(updated);
+        if (onItemPersisted) {
+          const updatedItem: ContentItem = await res.json();
+          onItemPersisted(updatedItem);
         }
       }
     },
-    [contentItemId, onSlidePersisted],
+    [contentItemId, onItemPersisted],
   );
 
   const {
