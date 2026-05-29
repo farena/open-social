@@ -115,19 +115,33 @@ curl -X POST http://localhost:3000/api/components/from-element \\
    - \`parameters\`: object with one key per parametersSchema entry, value = entry.defaultValue (or "" if absent or empty string is desired)
    - \`parameterTypes\`: object with one key per parametersSchema entry, value = entry.type
 
-   Then POST to:
+   Set \`position\` to where the user asked (e.g. "parte superior" → small \`y\`, like \`{ "x": 80, "y": 80 }\`). Then POST to:
    \`http://localhost:3000/api/content/<CONTENT_ITEM_ID>/slides/<SLIDE_ID>/elements\`
 
    with body:
    \`\`\`json
-   {"kind":"container","position":{"x":0,"y":0},"size":{...},"htmlContent":"...","scssStyles":"...","parameters":{...},"parameterTypes":{...}}
+   {"kind":"container","position":{"x":80,"y":80},"size":{...},"htmlContent":"...","scssStyles":"...","parameters":{...},"parameterTypes":{...}}
    \`\`\`
+
+   The POST response includes the new element's auto-generated \`id\` — keep it; you need it to edit the copy afterward. To place the same component on multiple slides (e.g. "slides 1 and 2"), POST once per slide; each becomes an INDEPENDENT copy with its own element id.
+
+### Editing an inserted component
+
+A component, once inserted, is just a normal container element — edit it with the granular element PATCH (see the API reference below). After inserting, capture the returned element id and PATCH that element on its slide:
+\`http://localhost:3000/api/content/<CONTENT_ITEM_ID>/slides/<SLIDE_ID>/elements/<ELEMENT_ID>\`
+
+Pick the field that matches what the user wants to change:
+- **A value that is a parameter** (the component's parametersSchema lists it) → PATCH \`parameters\` with the changed keys, e.g. \`{ "parameters": { "title": "Nuevo texto", "textColor": "#ffffff" } }\`. Parameter values interpolate as \`{{key}}\` at render time.
+- **Appearance that is NOT a parameter** (e.g. "su texto en blanco" but there's no color parameter) → the color lives in \`scssStyles\`. PATCH replaces \`scssStyles\` wholesale (no merge), so first read the current value from \`GET /api/content/<ID>\`, modify the relevant rule (e.g. set \`color: #fff\` on the text selector), and PATCH the full updated \`scssStyles\` string back.
+- **Position / size** → PATCH \`position\` and/or \`size\`.
+
+When the user inserts the same component on several slides and then asks to restyle "it", apply the same PATCH to EACH copy's element id (each slide has its own).
 
 ### Important notes about components
 
 - Parameter values are interpolated as \`{{key}}\` in \`htmlContent\` and \`scssStyles\` at render time.
 - If a \`{{key}}\` has no value in \`parameters\`, it appears literally in the preview (\`{{key}}\`). Resolve all keys to non-empty values before inserting unless that's intentional.
-- The container is a snapshot — editing the master component does NOT update inserted copies.`
+- The container is a snapshot — editing the master component does NOT update inserted copies, and editing an inserted copy does NOT change the master.`
     : "";
 
   const presetSection = stylePreset
@@ -161,7 +175,7 @@ ${presetSection}
 ### When the user gives you a TOPIC or IDEA:
 1. Immediately start creating slides — don't ask "what do you want?"
 2. Plan a ${Math.min(8, MAX_SLIDES)}-slide narrative arc:
-   - Slide 1: HOOK — provocative question, bold stat, or contrarian statement (max 8 words, huge text)
+   - Slide 1: HOOK — provocative question, bold stat, or contrarian statement (max 8 words, huge text), ALWAYS paired with a supporting visual: an image (only a path you've been told about — an asset/logo above) or a CSS-built mockup (phone/device frame, browser window, app screen, card, or product mockup). Never a text-only hook slide; the headline and the visual must work together.
    - Slides 2-3: Setup — establish the problem or context
    - Slides 4-6: Value — one key insight per slide, punchy text
    - Slide 7: Summary or transformation
@@ -276,7 +290,7 @@ curl -s -X POST http://localhost:3000/api/content/${carousel?.id || "{ID}"}/slid
 
 ### Granular edits — PREFERRED for small changes
 
-**Patch one element** (only the fields you want to change — common: position, size, scssStyles, htmlContent, src, opacity, hidden, rotation). htmlContent only valid for kind=container; src only for kind=image.
+**Patch one element** (only the fields you want to change — common: position, size, scssStyles, htmlContent, src, opacity, hidden, rotation). For container elements that came from a component you can also patch \`parameters\` and \`parameterTypes\` to change interpolated values. htmlContent only valid for kind=container; src only for kind=image.
 \`\`\`bash
 curl -s -X PATCH http://localhost:3000/api/content/${carousel?.id || "{ID}"}/slides/{SLIDE_ID}/elements/{ELEMENT_ID} \\
   -H "Content-Type: application/json" \\
