@@ -2,10 +2,10 @@
 title: Generate route — POST /api/content/[id]/generate
 type: entity
 code_refs: ["src/app/api/content/[id]/generate/route.ts", src/lib/content-generation-system-prompt.ts, src/lib/claude-path.ts, "src/app/content/[id]/page.tsx", src/components/content/ContentItemDetailIdea.tsx]
-sources: [raw/decisions/append-only-agent-contract-2026-04-26.md, raw/incidents/windows-claude-cli-silent-failure-2026-04-15.md]
+sources: [raw/decisions/append-only-agent-contract-2026-04-26.md, raw/incidents/windows-claude-cli-silent-failure-2026-04-15.md, raw/decisions/hook-visual-and-idea-assets-2026-05-29.md]
 related: [pages/entities/content-item-model.md, pages/entities/chat-route.md, pages/concepts/sse-streaming.md, pages/concepts/append-only-agent-contract.md]
 created: 2026-04-29
-updated: 2026-05-01
+updated: 2026-05-29
 confidence: high
 ---
 
@@ -28,11 +28,18 @@ Spawns the Claude CLI as a subprocess to design slides for a `ContentItem`, stre
 
 ## Spawn args
 
-`-p <user message> --output-format stream-json --include-partial-messages --verbose --append-system-prompt <prompt> --allowedTools Bash WebFetch --max-budget-usd 1.00 --name content-generation`. The agent uses `curl` against the local `/api/content/[id]/slides` endpoint to append slides; see [[entities/content-routes]].
+`-p <user message> --output-format stream-json --include-partial-messages --verbose --append-system-prompt <prompt> --allowedTools Bash --allowedTools WebFetch --allowedTools Read --max-budget-usd 1.00 --name content-generation` (see `src/app/api/content/[id]/generate/route.ts:73`). The `Read` tool was added on 2026-05-29 to allow the agent to open reference image files (absolute paths from `referenceImages[].absPath`) before designing Slide 1. The agent uses `curl` against the local `/api/content/[id]/slides` endpoint to append slides; see [[entities/content-routes]].
 
 ## System prompt
 
-Built by `buildContentGenerationSystemPrompt` (`src/lib/content-generation-system-prompt.ts`) from the content item, brand config, and business context. Instructs the agent to send `X-Agent-Origin: claude` on every write and treat 409 as a hard stop.
+Built by `buildContentGenerationSystemPrompt` (`src/lib/content-generation-system-prompt.ts:7`) from the content item, brand config, business context, and — since 2026-05-29 — library assets (`libraryAssets?: Asset[]`). Instructs the agent to send `X-Agent-Origin: claude` on every write and treat 409 as a hard stop.
+
+The system prompt now injects two additional sections when data is present:
+
+- **Reference images** (`src/lib/content-generation-system-prompt.ts:67`): lists `item.referenceImages` with `absPath` values; instructs the agent to use `Read` to view them and replicate visual style.
+- **Assets** (`src/lib/content-generation-system-prompt.ts:77`): lists item-scoped and library assets with their URLs; instructs the agent to use them via `image` elements or `background` with `kind: "image"`. Includes the note: "When an asset fits the hook, prefer it as the slide-1 visual instead of a CSS mockup."
+
+The **Slide 1 rule** is explicit in the generation instructions section (`src/lib/content-generation-system-prompt.ts:193` carousel, `:204` single-slide): Slide 1 must pair the hook text with a supporting visual (image element or CSS mockup); a text-only Slide 1 is forbidden. See [[sources/hook-visual-and-idea-assets-2026-05-29]].
 
 ## Failure modes
 
@@ -69,3 +76,4 @@ Notes:
 - 2026-04-28 (`7b237bf`) — Returns 409 if already generating; client debounces the button.
 - 2026-05-01 (`c552e67`) — Content page client consumes the SSE body for live refetches instead of polling; 1500 ms fallback poll only fires when no stream is active (e.g. reload mid-generation).
 - 2026-05-01 — On subprocess exit, the route now always resolves `generating` (→ `generated` if slides exist, → `idea` otherwise) instead of leaving non-zero exits stuck in `generating`. Fixes the infinite-polling bug when the client disconnected mid-generation or the agent hit `--max-budget-usd`.
+- 2026-05-29 — Route now calls `listAssets()` and passes library assets to `buildContentGenerationSystemPrompt`; adds `--allowedTools Read`; system prompt enforces Slide 1 visual requirement. See [[sources/hook-visual-and-idea-assets-2026-05-29]].

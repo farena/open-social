@@ -2,10 +2,10 @@
 title: Chat route — POST /api/chat
 type: entity
 code_refs: [src/app/api/chat/route.ts, src/lib/chat-system-prompt.ts, src/lib/ideation-system-prompt.ts, src/lib/content-idea-system-prompt.ts, src/lib/context-chat-system-prompt.ts, src/lib/claude-path.ts, src/lib/use-chat-stream.ts]
-sources: [raw/incidents/windows-claude-cli-silent-failure-2026-04-15.md]
+sources: [raw/incidents/windows-claude-cli-silent-failure-2026-04-15.md, raw/decisions/hook-visual-and-idea-assets-2026-05-29.md]
 related: [pages/entities/generate-route.md, pages/entities/content-routes.md, pages/concepts/sse-streaming.md]
 created: 2026-04-29
-updated: 2026-04-29
+updated: 2026-05-29
 confidence: high
 ---
 
@@ -35,7 +35,16 @@ Streams not just text tokens but also tool-use deltas (commit `fa11104`): when t
 
 ## Allowed tools
 
-`--allowedTools Bash` and `--allowedTools WebFetch`. The agent uses `curl` against the local API to mutate state.
+All modes: `--allowedTools Bash`, `--allowedTools WebFetch`, `--allowedTools Read` (see `src/app/api/chat/route.ts:136`). The agent uses `curl` against the local API to mutate state; `Read` is used by the `content-idea` agent to inspect reference images at their `absPath` before refining art-direction notes.
+
+## content-idea mode — assets and reference images
+
+Since 2026-05-29, the `content-idea` mode fetches library assets via `listAssets()` and passes them to `buildContentIdeaSystemPrompt` (see `src/app/api/chat/route.ts:76`). The system prompt now includes:
+
+- A **Reference images** section listing `item.referenceImages` with `absPath` values — the agent can `Read` them to inform art-direction notes.
+- An **Assets** section listing item-scoped and library assets — framed as informational for the idea phase; the agent factors them into `bodyIdea`/`notes` but does not create slides.
+
+The idea-refinement agent's mandate (text-fields-only PATCH) has not changed. See [[sources/hook-visual-and-idea-assets-2026-05-29]].
 
 ## Recent changes
 
@@ -45,3 +54,4 @@ Streams not just text tokens but also tool-use deltas (commit `fa11104`): when t
 - 2026-04-28 (`69b9d7a`) — Client `messages` initial state fixed for SSR.
 - 2026-04-29 (`c896e9e`) — Editor-mode system prompt (`buildChatSystemPrompt`) now ships a Material Symbols icon guide (default `Material Symbols Rounded`, axis knobs, safe vocabulary, anti-clutter rules). Pairs with `buildGoogleFontsFamilyParam` in [[entities/structured-slide-pipeline]] so the preview iframe actually loads the variable-axis font.
 - 2026-04-29 (`7b01153`) — Editor-mode API reference rewritten as exhaustive ("don't explore the codebase"). Adds an explicit **token-efficiency rule** ($1 budget per turn → prefer granular endpoints over whole-slide PUT) and a **single-`python3`-process batching pattern** for bulk edits across many elements (one urllib loop instead of N curl subprocesses). Also corrects the caption-save path: there is no `/caption` route — use `PATCH /api/content/{id}` with `{ caption, hashtags }`. New granular endpoints documented in [[entities/content-routes]].
+- 2026-05-29 — `content-idea` mode now calls `listAssets()` and injects reference images + assets into `buildContentIdeaSystemPrompt`. `--allowedTools Read` added to all modes. See [[sources/hook-visual-and-idea-assets-2026-05-29]].
