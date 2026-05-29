@@ -5,6 +5,7 @@ import { getClaudePath, isClaudeAvailable } from "@/lib/claude-path";
 import { buildContentGenerationSystemPrompt } from "@/lib/content-generation-system-prompt";
 import { getBrand } from "@/lib/brand";
 import { getBusinessContext } from "@/lib/business-context";
+import { listAssets } from "@/lib/assets";
 import { getContentItem, updateContentItem } from "@/lib/content-items";
 import { pushItemSnapshot } from "@/lib/content-item-snapshots";
 import { DEFAULT_ASPECT_RATIO_FOR_TYPE } from "@/types/content-item";
@@ -38,9 +39,10 @@ export async function POST(
     return NextResponse.json({ error: "already generating" }, { status: 409 });
   }
 
-  const [brand, businessContext] = await Promise.all([
+  const [brand, businessContext, libraryAssets] = await Promise.all([
     getBrand(),
     getBusinessContext(),
+    listAssets(),
   ]);
 
   const aspectRatio = item.aspectRatio ?? DEFAULT_ASPECT_RATIO_FOR_TYPE[item.type];
@@ -60,6 +62,7 @@ export async function POST(
     contentItem: { ...item, aspectRatio },
     brand,
     businessContext,
+    libraryAssets,
   });
 
   const userMessage = `Design the slides for content item ${id}. Use the curl POST endpoint described in the system prompt. Append-only.`;
@@ -80,6 +83,8 @@ export async function POST(
     "Bash",
     "--allowedTools",
     "WebFetch",
+    "--allowedTools",
+    "Read",
     "--max-budget-usd",
     "1.00",
     "--name",

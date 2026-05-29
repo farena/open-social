@@ -1,3 +1,4 @@
+import type { Asset } from "@/types/asset";
 import type { BrandConfig } from "@/types/brand";
 import type { BusinessContext } from "@/types/business-context";
 import type { ContentItem } from "@/types/content-item";
@@ -7,8 +8,9 @@ export function buildContentGenerationSystemPrompt(args: {
   contentItem: ContentItem;
   brand: BrandConfig;
   businessContext: BusinessContext;
+  libraryAssets?: Asset[];
 }): string {
-  const { contentItem, brand, businessContext } = args;
+  const { contentItem, brand, businessContext, libraryAssets = [] } = args;
 
   // --- Brand section ---
   const brandSection = brand.name
@@ -60,6 +62,28 @@ Your slides MUST be aligned with this business context: speak to the audience, r
 ${contentItem.caption ? `- Caption (already written): ${contentItem.caption}` : ""}
 ${contentItem.hashtags.length > 0 ? `- Hashtags: ${contentItem.hashtags.map((h) => `#${h}`).join(" ")}` : ""}
 ${contentItem.notes ? `- Notes / art direction: ${contentItem.notes}` : ""}`;
+
+  // --- Reference images section ---
+  const refs = contentItem.referenceImages ?? [];
+  const referenceSection =
+    refs.length > 0
+      ? `## Reference images (use Read to view these)
+${refs.map((r) => `- "${r.name}" → ${r.absPath}`).join("\n")}
+
+These are visual style references the user attached. Use Read to view each one, then study its colors, typography, spacing, layout, and background treatment, and replicate that visual style in the slides.`
+      : "";
+
+  // --- Assets section ---
+  const itemAssets = contentItem.assets ?? [];
+  const formatAsset = (a: Asset) =>
+    `- "${a.name}" → ${a.url}${a.description ? ` (${a.description})` : ""}`;
+  const assetsSection =
+    itemAssets.length > 0 || libraryAssets.length > 0
+      ? `## Assets (use these images IN slides)
+Use them via an \`image\` element (\`"kind": "image", "src": "URL"\`) or a \`background\` of \`{ "kind": "image", "src": "URL", "fit": "cover" }\`. Use them when they fit the topic — logos for brand slides, photos for context. **Only reference the URLs listed below; never invent a /uploads/ path.** When an asset fits the hook, prefer it as the slide-1 visual instead of a CSS mockup.
+${itemAssets.length > 0 ? `\n### This content item's assets\n${itemAssets.map(formatAsset).join("\n")}` : ""}
+${libraryAssets.length > 0 ? `\n### Library (reusable across all content)\n${libraryAssets.map(formatAsset).join("\n")}` : ""}`
+      : "";
 
   // --- Canvas dimensions ---
   const dimensions = DIMENSIONS[contentItem.aspectRatio];
@@ -166,7 +190,10 @@ If a curl returns HTTP 409, stop immediately — do not retry with PUT/DELETE. R
       ? `## Generation instructions
 
 You are designing slides for content item \`${contentItem.id}\`. This is a **carousel** — create **5–8 slides** following this narrative arc:
-1. **Slide 1 — Hook**: Translate the hook "${contentItem.hook}" into a thumb-stopping visual. Max 8 words, huge bold text.
+1. **Slide 1 — Hook**: Translate the hook "${contentItem.hook}" into a thumb-stopping visual. Max 8 words, huge bold text. **This slide MUST pair the hook text with a supporting visual — never ship a text-only hook slide.** The visual can be either:
+   - an \`image\` element, but ONLY using a path you actually know (the brand logo${brand.logoPath ? ` at \`${brand.logoPath}\`` : ""} or an asset under \`/uploads\`); never invent a path, OR
+   - a CSS-built mockup composed with \`container\` elements (e.g. a phone/device frame, browser window, app screen, card, or product mockup).
+   The headline and the visual must work together compositionally (e.g. text on one side, mockup on the other, or text overlaid on a framed device).
 2. **Slides 2–3 — Setup**: Establish the problem or context from the body idea.
 3. **Slides 4–6 — Value**: One key insight per slide, punchy text. Draw from the body idea.
 4. **Slide 7 — Summary or transformation**: Reinforce the core takeaway.
@@ -179,6 +206,8 @@ You are designing slides for content item \`${contentItem.id}\`. This is a **${c
 
 The slide should visually express the hook: "${contentItem.hook}".
 ${contentItem.bodyIdea ? `The body idea for context: "${contentItem.bodyIdea}".` : ""}
+
+**Pair the hook with a supporting visual — never a text-only slide.** Use either an \`image\` element with a known path (the brand logo${brand.logoPath ? ` at \`${brand.logoPath}\`` : ""} or an asset under \`/uploads\`; never invent a path) or a CSS-built mockup composed with \`container\` elements (phone/device frame, browser window, app screen, card, or product mockup). The headline and the visual must work together compositionally.
 
 Execute immediately — create the slide via the curl POST endpoint above. Do not ask for permission.`;
 
@@ -217,6 +246,10 @@ ${brandSection}
 ${businessSection}
 
 ${contentItemSection}
+
+${referenceSection}
+
+${assetsSection}
 
 ${canvasSection}
 
