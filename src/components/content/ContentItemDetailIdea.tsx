@@ -118,6 +118,7 @@ export function ContentItemDetailIdea({
         <ContentIdeaChat
           contentItemId={contentItem.id}
           claudeAvailable={claudeAvailable}
+          referenceImages={contentItem.referenceImages ?? []}
           onItemUpdated={onItemUpdated}
         />
       </div>

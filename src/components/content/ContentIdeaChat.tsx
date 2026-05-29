@@ -3,18 +3,23 @@
 import { useRef, useEffect } from "react";
 import { ChatMessage } from "@/components/chat/ChatMessage";
 import { ChatInput } from "@/components/chat/ChatInput";
+import { ReferenceImages } from "@/components/chat/ReferenceImages";
+import { Assets } from "@/components/chat/Assets";
 import { AlertCircle, Plug } from "lucide-react";
+import type { ReferenceImage } from "@/types/carousel";
 import { useChatStream } from "@/lib/use-chat-stream";
 
 interface ContentIdeaChatProps {
   contentItemId: string;
   claudeAvailable: boolean;
+  referenceImages?: ReferenceImage[];
   onItemUpdated?: () => void;
 }
 
 export function ContentIdeaChat({
   contentItemId,
   claudeAvailable,
+  referenceImages = [],
   onItemUpdated,
 }: ContentIdeaChatProps) {
   const STORAGE_KEY = `chat-messages-idea-${contentItemId}`;
@@ -76,6 +81,16 @@ export function ContentIdeaChat({
           </button>
         )}
       </div>
+
+      <ReferenceImages
+        contentItemId={contentItemId}
+        images={referenceImages}
+        onImagesChange={() => onItemUpdated?.()}
+      />
+
+      <Assets scope="carousel" contentItemId={contentItemId} />
+
+      <Assets scope="library" />
 
       <div ref={scrollRef} className="flex-1 overflow-y-auto">
         {messages.length === 0 && (
