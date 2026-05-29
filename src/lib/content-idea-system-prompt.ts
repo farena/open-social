@@ -1,3 +1,4 @@
+import type { Asset } from "@/types/asset";
 import type { BrandConfig } from "@/types/brand";
 import type { BusinessContext } from "@/types/business-context";
 import type { ContentItem } from "@/types/content-item";
@@ -5,7 +6,8 @@ import type { ContentItem } from "@/types/content-item";
 export function buildContentIdeaSystemPrompt(
   item: ContentItem,
   brand: BrandConfig,
-  ctx: BusinessContext
+  ctx: BusinessContext,
+  libraryAssets: Asset[] = []
 ): string {
   const brandSection = brand.name
     ? `## Brand identity
@@ -49,6 +51,26 @@ Use professional defaults: clean minimal style.`;
 - Hashtags: ${item.hashtags.length > 0 ? item.hashtags.map((h) => `#${h}`).join(" ") : "(none)"}
 - Notes: ${item.notes || "(none)"}`;
 
+  const refs = item.referenceImages ?? [];
+  const referenceSection =
+    refs.length > 0
+      ? `## Reference images attached to this idea (use Read to view them)
+${refs.map((r) => `- "${r.name}" → ${r.absPath}`).join("\n")}
+
+These are visual style references the user attached. You may Read them to inform the notes / art direction, but you only edit text fields — you never create slides here.`
+      : "";
+
+  const itemAssets = item.assets ?? [];
+  const formatAsset = (a: Asset) =>
+    `- "${a.name}" → ${a.url}${a.description ? ` (${a.description})` : ""}`;
+  const assetsSection =
+    itemAssets.length > 0 || libraryAssets.length > 0
+      ? `## Assets attached for this content
+These images are attached now and will be available to the design engine when the slides are generated. Take them into account when refining the body idea and notes (e.g. suggest where a given asset fits). Do NOT try to build slides with them — just keep them in mind.
+${itemAssets.length > 0 ? `\n### This idea's assets\n${itemAssets.map(formatAsset).join("\n")}` : ""}
+${libraryAssets.length > 0 ? `\n### Library (reusable across all content)\n${libraryAssets.map(formatAsset).join("\n")}` : ""}`
+      : "";
+
   return `You are the Content Idea Refinement Agent for Open Social. Your job is to help the user refine a SINGLE content item's text fields: hook, bodyIdea, caption, hashtags, and notes.
 
 ${brandSection}
@@ -56,6 +78,10 @@ ${brandSection}
 ${contextSection}
 
 ${itemSection}
+
+${referenceSection}
+
+${assetsSection}
 
 ## What you can do
 

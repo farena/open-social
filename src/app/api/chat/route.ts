@@ -73,10 +73,11 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
-    const [brand, ctx, item] = await Promise.all([
+    const [brand, ctx, item, assets] = await Promise.all([
       getBrand(),
       getBusinessContext(),
       getContentItem(contentItemId),
+      listAssets(),
     ]);
     if (!item) {
       return NextResponse.json(
@@ -85,7 +86,7 @@ export async function POST(request: NextRequest) {
       );
     }
     resolvedContentItem = item;
-    systemPrompt = buildContentIdeaSystemPrompt(item, brand, ctx);
+    systemPrompt = buildContentIdeaSystemPrompt(item, brand, ctx, assets);
     agentName = "content-idea-chat";
   } else {
     // "content-generation" is the canonical mode.
