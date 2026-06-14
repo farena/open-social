@@ -2,10 +2,10 @@
 title: Slide editor (canvas + overlay)
 type: entity
 code_refs: [src/components/editor/SlideCanvas.tsx, src/components/editor/SlideOverlay.tsx, src/components/editor/PropertiesPanel.tsx, src/components/editor/LayersPanel.tsx, src/components/editor/Toolbar.tsx, src/components/editor/useSlideEditor.ts, src/components/editor/useEditorShortcuts.ts, src/components/editor/EditorBody.tsx, src/components/editor/CarouselPreview.tsx, src/components/editor/SlideRenderer.tsx, src/components/editor/SlideFilmstrip.tsx]
-sources: [raw/decisions/structured-slide-model-2026-04-25.md, raw/decisions/keepalive-put-vs-sendbeacon-2026-05-01.md, raw/incidents/slide-edit-lost-on-slide-switch-2026-05-27.md]
-related: [pages/entities/structured-slide-pipeline.md, pages/entities/content-routes.md, pages/concepts/structured-slide-model.md, pages/concepts/version-history.md]
+sources: [raw/decisions/structured-slide-model-2026-04-25.md, raw/decisions/keepalive-put-vs-sendbeacon-2026-05-01.md, raw/incidents/slide-edit-lost-on-slide-switch-2026-05-27.md, raw/incidents/autosave-infinite-loop-onpersist-dep-2026-05-29.md]
+related: [pages/entities/structured-slide-pipeline.md, pages/entities/content-routes.md, pages/concepts/structured-slide-model.md, pages/concepts/version-history.md, pages/concepts/effect-dependency-stability.md]
 created: 2026-04-29
-updated: 2026-05-27
+updated: 2026-05-29
 confidence: high
 ---
 
@@ -48,6 +48,8 @@ The editor's in-flight `slide` (live reducer state, ahead of the persisted row) 
 
 **Slide-switch flush.** When navigating to a different slide, `useSlideEditor`'s reset effect flushes the *outgoing* slide's pending debounced persist before the persist effect's cleanup `clearTimeout`s it — otherwise a switch within the debounce window drops the un-persisted edit. The reset effect is keyed on `state.slide.id` (not `state.slide`) so it does not run per-edit; the outgoing slide and persist fn are read from refs to stay current.
 
+**Persist effect deps.** The debounced persist effect depends on `[state.slide, debounceMs]` only — **not** on `onPersist`. `onPersist` is unstable (it traces back through `EditorBody`'s `persist` to the inline `onItemPersisted` arrow in `page.tsx`, a new reference every render), so including it once produced an infinite 5 s auto-save loop: each save re-rendered the page, re-registered the effect, and the `state.slide === lastPersistedRef.current` guard could not stop it because the echo-absorption reset effect had repointed `lastPersistedRef.current` at the server-returned slide (content-equal, reference-unequal). The fix reads the always-current `onPersistRef.current(snapshot)` inside the effect — the same synced-ref pattern the reset and unmount/flush effects already use. See [[sources/autosave-infinite-loop-onpersist-dep-2026-05-29]] and [[concepts/effect-dependency-stability]].
+
 ## Recent changes
 
 - 2026-04-26 (`b34fc19`) — Operates on `ContentItem` instead of `Carousel`.
@@ -57,3 +59,4 @@ The editor's in-flight `slide` (live reducer state, ahead of the persisted row) 
 - 2026-05-01 (`4c5459f`) — `EditorBody` exposes `onLiveSlideChange`; the page splices the live slide into `item.slides` so `FullscreenPreview` and `SlideFilmstrip` show unsaved edits before the debounce fires.
 - 2026-05-01 (`5df9355`) — Persist debounce lowered from 10 s to 5 s; `CarouselPreview` shows a transient "Saved" badge in the top-right whenever a PUT succeeds (`savedAt` prop bubbled from `EditorBody`).
 - 2026-05-27 (uncommitted) — Fixed edits reverting on slide switch: `onSlidePersisted` → `onItemPersisted: (item: ContentItem) => void`, page does `setItem(updatedItem)` (the slide PUT returns the whole item). `useSlideEditor` flushes the outgoing slide's pending persist on slide switch. See [[sources/slide-edit-lost-on-slide-switch-2026-05-27]].
+- 2026-05-29 (uncommitted) — Fixed an infinite 5 s auto-save loop: the debounced persist effect dropped the unstable `onPersist` from its deps (now `[state.slide, debounceMs]`) and reads `onPersistRef.current(snapshot)` instead, so it re-runs only on a real `state.slide` change and the server echo no longer relaunches the timer. See [[sources/autosave-infinite-loop-onpersist-dep-2026-05-29]] and [[concepts/effect-dependency-stability]].

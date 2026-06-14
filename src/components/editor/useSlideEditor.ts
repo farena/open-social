@@ -271,7 +271,13 @@ export function useSlideEditor(
       lastSentContentRef.current = slideContentSignature(snapshot);
       persistTimerRef.current = null;
       try {
-        await onPersist(snapshot);
+        // Read from the ref so this effect can stay keyed on state.slide alone.
+        // Depending on `onPersist` directly re-runs the effect on every render
+        // (the parent re-creates it via an unstable onItemPersisted), which,
+        // combined with the reset effect repointing lastPersistedRef at the
+        // server echo, made the guard above fail forever and re-persist every
+        // debounce tick until reload.
+        await onPersistRef.current(snapshot);
         lastPersistedRef.current = snapshot;
       } catch (err) {
         console.error("Failed to persist slide:", err);
@@ -281,7 +287,7 @@ export function useSlideEditor(
     return () => {
       if (persistTimerRef.current) clearTimeout(persistTimerRef.current);
     };
-  }, [state.slide, onPersist, debounceMs]);
+  }, [state.slide, debounceMs]);
 
   // Flush pending persist on unmount so in-flight edits are not lost when the
   // user navigates away or collapses the panel before the debounce window ends.

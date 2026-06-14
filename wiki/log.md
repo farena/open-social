@@ -15,3 +15,4 @@ last-ingest-commit: 54e3db5a933a8611376896cbec2387fcf2635f81
 ## [2026-05-02] run-ingest | 5df9355..54e3db5 — 5 units, 3 pages touched, 1 raw entry
 ## [2026-05-27] ingest | slide-edit-lost-on-slide-switch — 4 pages touched (raw incident + sources page + slide-editor + content-routes) + index entry
 ## [2026-05-29] ingest | hook-visual-and-idea-assets — 5 pages touched (raw decision + sources page + chat-route + generate-route + index)
+## [2026-05-29] ingest | autosave-infinite-loop-onpersist-dep — 5 pages touched (raw incident + sources page + new concept effect-dependency-stability + slide-editor + index)

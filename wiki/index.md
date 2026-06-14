@@ -22,6 +22,7 @@ Karpathy-style LLM wiki. Pages are compiled at ingest time from decisions, incid
 - [version-history](pages/concepts/version-history.md) — bounded per-slide snapshot stacks (`previousVersions` + `nextVersions`), server-side undo / redo
 - [storage-architecture](pages/concepts/storage-architecture.md) — unified SQLite DB (`data/sales.db`), eight tables, singleton vs. collection pattern, test isolation, migration history
 - [migrations](pages/concepts/migrations.md) — Sequelize-style runner at `scripts/migrate.ts`, `migrations/` files with `up`/`down`, separate dev/test DB targets
+- [effect-dependency-stability](pages/concepts/effect-dependency-stability.md) — debounced-write effects depend only on changed data; read unstable callbacks from synced refs; `===` guards break when an echo effect repoints the ref
 
 ## Sources
 
@@ -36,6 +37,7 @@ Karpathy-style LLM wiki. Pages are compiled at ingest time from decisions, incid
 - [migration-runner-2026-05-02](raw/decisions/migration-runner-2026-05-02.md)
 - [slide-edit-lost-on-slide-switch-2026-05-27](pages/sources/slide-edit-lost-on-slide-switch-2026-05-27.md) — edits reverted on slide switch: slide PUT returns the full ContentItem and the client merged it as a slide
 - [hook-visual-and-idea-assets-2026-05-29](pages/sources/hook-visual-and-idea-assets-2026-05-29.md) — Slide 1 must pair hook text with a visual; idea-phase chat and generate route now see assets + reference images
+- [autosave-infinite-loop-onpersist-dep-2026-05-29](pages/sources/autosave-infinite-loop-onpersist-dep-2026-05-29.md) — editor auto-saved every 5 s forever: unstable `onPersist` in the persist effect's deps + an echo-repointed `===` guard; fixed by reading `onPersistRef.current` with narrow deps
 
 ## Comparisons
 
