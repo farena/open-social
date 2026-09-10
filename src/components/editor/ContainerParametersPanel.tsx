@@ -1,15 +1,19 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
+import { useState } from "react";
 import type { ParameterType } from "@/types/component";
 
 interface Props {
-  contentItemId: string;
-  slideId: string;
-  elementId: string;
   parameters: Record<string, string>;
   parameterTypes?: Record<string, ParameterType>;
-  onPatched?: (next: { parameters: Record<string, string> }) => void;
+  /**
+   * Called with the full next parameter map whenever a field changes. The
+   * editor dispatches this into the slide reducer (PATCH_ELEMENT) so the
+   * preview re-interpolates immediately and the change rides the normal
+   * debounced persist — never a separate server write, which would conflict
+   * with the editor's whole-slide PUT.
+   */
+  onChange: (parameters: Record<string, string>) => void;
 }
 
 // ---------------------------------------------------------------------------
@@ -28,12 +32,9 @@ function resolveType(
 // ---------------------------------------------------------------------------
 
 export function ContainerParametersPanel({
-  contentItemId,
-  slideId,
-  elementId,
   parameters,
   parameterTypes,
-  onPatched,
+  onChange,
 }: Props) {
   const keys = Object.keys(parameters);
   if (keys.length === 0) return null;
@@ -50,11 +51,8 @@ export function ContainerParametersPanel({
             paramKey={key}
             value={parameters[key]}
             type={resolveType(key, parameterTypes)}
-            contentItemId={contentItemId}
-            slideId={slideId}
-            elementId={elementId}
             allParameters={parameters}
-            onPatched={onPatched}
+            onChange={onChange}
           />
         ))}
       </div>
@@ -70,67 +68,24 @@ interface FieldProps {
   paramKey: string;
   value: string;
   type: ParameterType;
-  contentItemId: string;
-  slideId: string;
-  elementId: string;
   allParameters: Record<string, string>;
-  onPatched?: (next: { parameters: Record<string, string> }) => void;
+  onChange: (parameters: Record<string, string>) => void;
 }
 
 function ParameterField({
   paramKey,
   value,
   type,
-  contentItemId,
-  slideId,
-  elementId,
   allParameters,
-  onPatched,
+  onChange,
 }: FieldProps) {
   const [localValue, setLocalValue] = useState(value);
   const [error, setError] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
-  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  const patch = useCallback(
-    (newValue: string) => {
-      if (timerRef.current) clearTimeout(timerRef.current);
-      timerRef.current = setTimeout(async () => {
-        timerRef.current = null;
-        const nextParameters = { ...allParameters, [paramKey]: newValue };
-        try {
-          const res = await fetch(
-            `/api/content/${contentItemId}/slides/${slideId}/elements/${elementId}`,
-            {
-              method: "PATCH",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ parameters: nextParameters }),
-            },
-          );
-          if (!res.ok) {
-            const data = await res.json().catch(() => ({}));
-            const msg =
-              (data as { error?: string }).error ??
-              `Error ${res.status} al guardar el parámetro.`;
-            console.error("[ContainerParametersPanel] patch failed:", msg);
-            setError(msg);
-            return;
-          }
-          setError(null);
-          onPatched?.({ parameters: nextParameters });
-        } catch (err) {
-          const msg = err instanceof Error ? err.message : "Network error while saving.";
-          console.error("[ContainerParametersPanel] patch exception:", err);
-          setError(msg);
-        }
-      }, 300);
-    },
-    [contentItemId, slideId, elementId, allParameters, paramKey, onPatched],
-  );
 
   const handleChange = (newValue: string) => {
     setLocalValue(newValue);
-    patch(newValue);
+    onChange({ ...allParameters, [paramKey]: newValue });
   };
 
   const handleUpload = async (file: File) => {

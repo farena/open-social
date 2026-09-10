@@ -93,8 +93,18 @@ export function PropertiesPanel({
         {selected?.kind === "container" && (
           <ContainerControls element={selected} dispatch={dispatch} />
         )}
-        {selected?.kind === "container" && selected.parameters && Object.keys(selected.parameters).length > 0 && contentItemId && (
-          <ContainerParametersPanel contentItemId={contentItemId} slideId={slide.id} elementId={selected.id} parameters={selected.parameters} parameterTypes={selected.parameterTypes} />
+        {selected?.kind === "container" && selected.parameters && Object.keys(selected.parameters).length > 0 && (
+          <ContainerParametersPanel
+            parameters={selected.parameters}
+            parameterTypes={selected.parameterTypes}
+            onChange={(parameters) =>
+              dispatch({
+                type: "PATCH_ELEMENT",
+                elementId: selected.id,
+                patch: { parameters } as Partial<ContainerElement>,
+              })
+            }
+          />
         )}
         {selected?.kind === "image" && (
           <ImageControls element={selected} dispatch={dispatch} />
